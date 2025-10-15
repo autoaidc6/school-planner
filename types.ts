@@ -1,8 +1,14 @@
+export type View = 'Overview' | 'Agenda' | 'Timetable' | 'Calendar' | 'GradeTracker';
+
 export enum TaskCategory {
   Homework = 'Homework',
+  Study = 'Study Session',
   Exam = 'Exam',
-  Assignment = 'Assignment',
-  Reminder = 'Reminder',
+  Project = 'Project',
+  Break = 'Break',
+  Lunch = 'Lunch',
+  Personal = 'Personal',
+  Other = 'Other',
 }
 
 export enum ReminderOption {
@@ -18,23 +24,34 @@ export interface Task {
   id: string;
   title: string;
   subject: string;
+  category: TaskCategory;
   dueDate: Date;
   completed: boolean;
-  category: TaskCategory;
-  description?: string;
-  reminder?: ReminderOption;
+  description: string;
+  reminder: ReminderOption;
 }
 
 export interface ClassEvent {
   id: string;
   subject: string;
   day: number; // 0 for Sunday, 1 for Monday, etc.
-  startTime: string; // "HH:mm" format
-  endTime: string; // "HH:mm" format
-  location?: string;
-  reminder?: ReminderOption;
+  startTime: string; // "HH:mm"
+  endTime: string; // "HH:mm"
+  reminder: ReminderOption;
 }
 
-export type View = 'Overview' | 'Agenda' | 'Timetable' | 'Calendar';
+export interface Subject {
+    id: string;
+    name: string;
+    credits: number;
+    goal: number;
+}
 
-export type PlannerEvent = Task | ClassEvent;
+export interface Grade {
+    id:string;
+    subjectId: string;
+    name: string;
+    score: number;
+    total: number;
+    weight: number;
+}

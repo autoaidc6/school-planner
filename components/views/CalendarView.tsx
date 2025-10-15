@@ -6,9 +6,10 @@ import { BellIcon } from '../icons';
 interface CalendarViewProps {
   tasks: Task[];
   classes: ClassEvent[];
+  onEdit: (event: Task | ClassEvent) => void;
 }
 
-const CalendarView: React.FC<CalendarViewProps> = ({ tasks, classes }) => {
+const CalendarView: React.FC<CalendarViewProps> = ({ tasks, classes, onEdit }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -61,7 +62,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, classes }) => {
               const dayEvents = eventsForDay(d);
               
               return (
-                <div key={d.toString()} className={`p-2 border border-transparent rounded-lg cursor-pointer ${isCurrentMonth ? '' : 'text-gray-300'}`} onClick={() => setSelectedDate(d)}>
+                <div key={d.toString()} className={`p-2 border border-transparent rounded-lg cursor-pointer transition-colors hover:bg-gray-100 ${isCurrentMonth ? '' : 'text-gray-300'}`} onClick={() => setSelectedDate(d)}>
                   <div className={`mx-auto w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isToday ? 'bg-blue-600 text-white' : ''} ${isSelected ? 'border-2 border-blue-400' : ''}`}>
                     {d.getDate()}
                   </div>
@@ -69,6 +70,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, classes }) => {
                     {dayEvents.dailyTasks.slice(0, 3).map(task => (
                       <div key={task.id} className={`w-1.5 h-1.5 rounded-full ${SUBJECT_COLORS[task.subject]?.bg.replace('-100', '-400') || 'bg-gray-400'}`}></div>
                     ))}
+                    {dayEvents.dailyClasses.length > 0 && dayEvents.dailyTasks.length < 3 && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+                    )}
                   </div>
                 </div>
               )
@@ -83,8 +87,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, classes }) => {
                     {selectedDayEvents.dailyTasks.length > 0 ? (
                         <div className="space-y-2">
                         {selectedDayEvents.dailyTasks.map(task => (
-                             <div key={task.id} className={`p-3 rounded-lg text-sm ${SUBJECT_COLORS[task.subject].bg} ${SUBJECT_COLORS[task.subject].text}`}>
-                                <p className="font-semibold">{task.title}</p>
+                             <div key={task.id} onClick={() => onEdit(task)} className={`p-3 rounded-lg text-sm cursor-pointer hover:shadow-md transition-shadow ${SUBJECT_COLORS[task.subject].bg} ${SUBJECT_COLORS[task.subject].text}`}>
+                                <div className="flex justify-between items-start">
+                                  <p className="font-semibold">{task.title}</p>
+                                  <span className="text-xs font-medium opacity-70 bg-black/10 px-1.5 py-0.5 rounded">Task</span>
+                                </div>
                                 <p className="text-xs opacity-80">{task.category}</p>
                                 {task.reminder && task.reminder !== 'None' && (
                                     <div className="flex items-center text-xs opacity-70 mt-1">
@@ -102,8 +109,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, classes }) => {
                      {selectedDayEvents.dailyClasses.length > 0 ? (
                         <div className="space-y-2">
                         {selectedDayEvents.dailyClasses.map(cls => (
-                             <div key={cls.id} className={`p-3 rounded-lg text-sm ${SUBJECT_COLORS[cls.subject].bg} ${SUBJECT_COLORS[cls.subject].text}`}>
-                                <p className="font-semibold">{cls.subject}</p>
+                             <div key={cls.id} onClick={() => onEdit(cls)} className={`p-3 rounded-lg text-sm cursor-pointer hover:shadow-md transition-shadow ${SUBJECT_COLORS[cls.subject].bg} ${SUBJECT_COLORS[cls.subject].text}`}>
+                                <div className="flex justify-between items-start">
+                                  <p className="font-semibold">{cls.subject}</p>
+                                  <span className="text-xs font-medium opacity-70 bg-black/10 px-1.5 py-0.5 rounded">Class</span>
+                                </div>
                                 <p className="text-xs opacity-80">{cls.startTime} - {cls.endTime}</p>
                                 {cls.reminder && cls.reminder !== 'None' && (
                                     <div className="flex items-center text-xs opacity-70 mt-1">

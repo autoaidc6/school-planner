@@ -7,6 +7,7 @@ import { BellIcon } from '../icons';
 interface OverviewProps {
   tasks: Task[];
   classes: ClassEvent[];
+  onEdit: (event: Task | ClassEvent) => void;
 }
 
 const WeeklyReportChart: React.FC<{tasks: Task[]}> = ({tasks}) => {
@@ -34,7 +35,7 @@ const WeeklyReportChart: React.FC<{tasks: Task[]}> = ({tasks}) => {
     );
 };
 
-const TodayEvent: React.FC<{ event: Task | ClassEvent }> = ({ event }) => {
+const TodayEvent: React.FC<{ event: Task | ClassEvent, onEdit: (event: Task | ClassEvent) => void }> = ({ event, onEdit }) => {
     const color = SUBJECT_COLORS[event.subject] || SUBJECT_COLORS['Default'];
     const isTask = 'title' in event;
 
@@ -46,10 +47,13 @@ const TodayEvent: React.FC<{ event: Task | ClassEvent }> = ({ event }) => {
     }
 
     return (
-        <div className={`p-4 rounded-lg flex items-start gap-4 border-l-4 ${color.border} ${color.bg}`}>
-            <div className={`w-3 h-3 rounded-full mt-1.5 ${color.bg.replace('bg-', 'bg-').replace('-100', '-500')}`}></div>
+        <button onClick={() => onEdit(event)} className={`w-full text-left p-4 rounded-lg flex items-start gap-4 border-l-4 transition-shadow hover:shadow-lg ${color.border} ${color.bg}`}>
+            <div className={`w-3 h-3 rounded-full mt-1.5 flex-shrink-0 ${color.bg.replace('bg-', 'bg-').replace('-100', '-500')}`}></div>
             <div className="flex-grow">
-                <p className={`font-semibold ${color.text}`}>{isTask ? event.title : event.subject}</p>
+                 <div className="flex justify-between items-start">
+                    <p className={`font-semibold ${color.text}`}>{isTask ? event.title : event.subject}</p>
+                    <span className={`text-xs font-medium uppercase tracking-wider opacity-70 ${color.text}`}>{isTask ? 'Task' : 'Class'}</span>
+                </div>
                 <p className={`text-sm opacity-80 ${color.text}`}>{getTime()}</p>
                 {event.reminder && event.reminder !== 'None' && (
                     <div className={`flex items-center text-xs mt-1 opacity-70 ${color.text}`}>
@@ -58,11 +62,11 @@ const TodayEvent: React.FC<{ event: Task | ClassEvent }> = ({ event }) => {
                     </div>
                 )}
             </div>
-        </div>
+        </button>
     );
 };
 
-const Overview: React.FC<OverviewProps> = ({ tasks, classes }) => {
+const Overview: React.FC<OverviewProps> = ({ tasks, classes, onEdit }) => {
     const today = new Date();
     const isSameDay = (d1: Date, d2: Date) => d1.toDateString() === d2.toDateString();
 
@@ -91,7 +95,7 @@ const Overview: React.FC<OverviewProps> = ({ tasks, classes }) => {
             <p className="text-sm text-gray-500 mb-4">{today.toDateString()}</p>
             <div className="space-y-3">
                 {todayEvents.length > 0 ? (
-                    todayEvents.map(event => <TodayEvent key={event.id} event={event} />)
+                    todayEvents.map(event => <TodayEvent key={event.id} event={event} onEdit={onEdit} />)
                 ) : (
                     <p className="text-gray-500 text-center py-8">No events scheduled for today. Enjoy your day!</p>
                 )}

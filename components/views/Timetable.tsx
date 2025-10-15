@@ -4,9 +4,10 @@ import { SUBJECT_COLORS } from '../../constants';
 
 interface TimetableProps {
   classes: ClassEvent[];
+  onEdit: (event: ClassEvent) => void;
 }
 
-const Timetable: React.FC<TimetableProps> = ({ classes }) => {
+const Timetable: React.FC<TimetableProps> = ({ classes, onEdit }) => {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const hours = Array.from({ length: 12 }, (_, i) => 8 + i); // 8 AM to 7 PM
 
@@ -58,14 +59,18 @@ const Timetable: React.FC<TimetableProps> = ({ classes }) => {
               return (
                 <div
                   key={classEvent.id}
-                  className={`absolute w-[calc(100%/7-4px)] mx-[2px] p-2 rounded-lg flex flex-col justify-between ${color.bg} ${color.text}`}
+                  onClick={() => onEdit(classEvent)}
+                  className={`absolute w-[calc(100%/7-4px)] mx-[2px] p-2 rounded-lg flex flex-col justify-between cursor-pointer hover:ring-2 ring-blue-400 transition-shadow ${color.bg} ${color.text}`}
                   style={{
                     top: `${top}px`,
                     height: `${height}px`,
                     left: `${dayIndex * (100 / 7)}%`,
                   }}
                 >
-                  <p className="font-bold text-sm">{classEvent.subject}</p>
+                  <div className="flex justify-between items-start">
+                    <p className="font-bold text-sm">{classEvent.subject}</p>
+                    <span className="text-xs font-medium opacity-70 bg-white/30 px-1.5 py-0.5 rounded">Class</span>
+                  </div>
                   <p className="text-xs">{classEvent.startTime} - {classEvent.endTime}</p>
                 </div>
               );

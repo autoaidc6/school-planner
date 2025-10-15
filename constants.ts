@@ -1,15 +1,13 @@
-import { TaskCategory, type Task, type ClassEvent } from './types';
+import { TaskCategory, ReminderOption, type Task, type ClassEvent, type Subject, type Grade } from './types';
 
 export const SUBJECT_COLORS: { [key: string]: { bg: string; text: string; border: string; } } = {
-  'Philosophy': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-500' },
+  'Mathematics': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-500' },
   'Physics': { bg: 'bg-indigo-100', text: 'text-indigo-800', border: 'border-indigo-500' },
-  'Spanish': { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-500' },
-  'English': { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-500' },
-  'Art': { bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-500' },
-  'Biology': { bg: 'bg-teal-100', text: 'text-teal-800', border: 'border-teal-500' },
-  'Maths': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-500' },
-  'History': { bg: 'bg-cyan-100', text: 'text-cyan-800', border: 'border-cyan-500' },
-  'Computer Science': { bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-500' },
+  'Literature': { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-500' },
+  'History': { bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-500' },
+  'Computer Science': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-500' },
+  'Art': { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-500' },
+  'Personal': { bg: 'bg-teal-100', text: 'text-teal-800', border: 'border-teal-500' },
   'Default': { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-500' },
 };
 
@@ -22,52 +20,90 @@ nextWeek.setDate(nextWeek.getDate() + 7);
 export const INITIAL_TASKS: Task[] = [
   {
     id: '1',
-    title: 'Research about resistant bacteria',
-    subject: 'Biology',
+    title: 'Complete Algebra Homework',
+    subject: 'Mathematics',
+    category: TaskCategory.Homework,
     dueDate: today,
     completed: false,
-    category: TaskCategory.Homework,
+    description: 'Chapter 3, problems 1-15.',
+    reminder: ReminderOption.OneHour,
   },
   {
     id: '2',
-    title: 'Integrals and derivatives exercises',
-    subject: 'Maths',
-    dueDate: today,
+    title: 'Study for Physics Midterm',
+    subject: 'Physics',
+    category: TaskCategory.Study,
+    dueDate: tomorrow,
     completed: false,
-    category: TaskCategory.Assignment,
+    description: 'Review chapters on kinematics and dynamics.',
+    reminder: ReminderOption.OneDay,
   },
   {
     id: '3',
-    title: 'Study Gauss\' law and the electric flux',
-    subject: 'Physics',
-    dueDate: tomorrow,
-    completed: true,
-    category: TaskCategory.Homework,
-  },
-   {
-    id: '4',
-    title: 'Exam on kinematics',
-    subject: 'Physics',
+    title: 'Write Essay on "The Great Gatsby"',
+    subject: 'Literature',
+    category: TaskCategory.Project,
     dueDate: nextWeek,
     completed: false,
-    category: TaskCategory.Exam,
+    description: '5-page essay on the theme of the American Dream.',
+    reminder: ReminderOption.OneDay,
   },
+  {
+    id: '4',
+    title: 'History Presentation',
+    subject: 'History',
+    category: TaskCategory.Project,
+    dueDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 3),
+    completed: true,
+    description: 'Presentation on the Roman Empire.',
+    reminder: ReminderOption.None,
+  }
 ];
 
 export const INITIAL_CLASSES: ClassEvent[] = [
-  { id: 'c1', subject: 'Philosophy', day: 1, startTime: '08:00', endTime: '09:00' },
-  { id: 'c2', subject: 'Biology', day: 1, startTime: '09:00', endTime: '10:30' },
-  { id: 'c3', subject: 'History', day: 1, startTime: '11:00', endTime: '12:30' },
-  { id: 'c4', subject: 'Physics', day: 2, startTime: '08:00', endTime: '09:30' },
-  { id: 'c5', subject: 'Art', day: 2, startTime: '09:30', endTime: '11:00' },
-  { id: 'c6', subject: 'English', day: 2, startTime: '11:00', endTime: '12:00' },
-  { id: 'c7', subject: 'Spanish', day: 3, startTime: '08:00', endTime: '09:30' },
-  { id: 'c8', subject: 'Maths', day: 3, startTime: '10:00', endTime: '11:30' },
-  { id: 'c9', subject: 'History', day: 3, startTime: '11:30', endTime: '13:00' },
-  { id: 'c10', subject: 'English', day: 4, startTime: '08:00', endTime: '09:00' },
-  { id: 'c11', subject: 'History', day: 4, startTime: '10:30', endTime: '12:00' },
-  { id: 'c12', subject: 'Philosophy', day: 4, startTime: '12:00', endTime: '13:00' },
-  { id: 'c13', subject: 'Art', day: 5, startTime: '08:00', endTime: '09:30' },
-  { id: 'c14', subject: 'Maths', day: 5, startTime: '09:30', endTime: '11:00' },
-  { id: 'c15', subject: 'Computer Science', day: 5, startTime: '12:00', endTime: '13:30' },
+  {
+    id: 'c1',
+    subject: 'Mathematics',
+    day: 1, // Monday
+    startTime: '09:00',
+    endTime: '10:30',
+    reminder: ReminderOption.FifteenMin,
+  },
+  {
+    id: 'c2',
+    subject: 'Physics',
+    day: 2, // Tuesday
+    startTime: '11:00',
+    endTime: '12:30',
+    reminder: ReminderOption.FifteenMin,
+  },
+  {
+    id: 'c3',
+    subject: 'Literature',
+    day: 1, // Monday
+    startTime: '13:00',
+    endTime: '14:00',
+    reminder: ReminderOption.None,
+  },
+  {
+    id: 'c4',
+    subject: 'Computer Science',
+    day: 3, // Wednesday
+    startTime: '10:00',
+    endTime: '12:00',
+    reminder: ReminderOption.FifteenMin,
+  }
+];
+
+export const INITIAL_SUBJECTS: Subject[] = [
+    { id: 's1', name: 'Mathematics', credits: 4, goal: 90 },
+    { id: 's2', name: 'Physics', credits: 4, goal: 85 },
+    { id: 's3', name: 'Literature', credits: 3, goal: 88 },
+];
+
+export const INITIAL_GRADES: Grade[] = [
+    { id: 'g1', subjectId: 's1', name: 'Homework 1', score: 95, total: 100, weight: 10 },
+    { id: 'g2', subjectId: 's1', name: 'Midterm', score: 85, total: 100, weight: 30 },
+    { id: 'g3', subjectId: 's2', name: 'Lab Report 1', score: 90, total: 100, weight: 20 },
+    { id: 'g4', subjectId: 's3', name: 'Essay 1', score: 88, total: 100, weight: 40 },
 ];

@@ -6,23 +6,28 @@ import { CheckCircleIcon, CircleIcon, BellIcon } from '../icons';
 interface AgendaProps {
   tasks: Task[];
   onToggleTask: (taskId: string) => void;
+  onEditTask: (task: Task) => void;
 }
 
-const TaskItem: React.FC<{ task: Task; onToggleTask: (taskId: string) => void }> = ({ task, onToggleTask }) => {
+const TaskItem: React.FC<{ task: Task; onToggleTask: (taskId: string) => void; onEditTask: (task: Task) => void; }> = ({ task, onToggleTask, onEditTask }) => {
   const color = SUBJECT_COLORS[task.subject] || SUBJECT_COLORS['Default'];
   
   return (
-    <div className="flex items-start space-x-4 py-4">
-      <button onClick={() => onToggleTask(task.id)} className="mt-1">
-        {task.completed ? <CheckCircleIcon className="w-6 h-6 text-blue-500" /> : <CircleIcon className="w-6 h-6 text-gray-300" />}
+    <div className="flex items-start space-x-4 py-4 group">
+      <button onClick={() => onToggleTask(task.id)} className="mt-1 flex-shrink-0 z-10">
+        {task.completed ? <CheckCircleIcon className="w-6 h-6 text-blue-500" /> : <CircleIcon className="w-6 h-6 text-gray-300 group-hover:text-gray-400" />}
       </button>
-      <div className="flex-1">
-        <p className={`font-medium text-gray-800 ${task.completed ? 'line-through text-gray-400' : ''}`}>{task.title}</p>
-        <div className="flex items-center text-sm text-gray-500 mt-1">
-          <div className={`w-2.5 h-2.5 rounded-full mr-2 ${color.bg.replace('bg-','bg-').replace('-100','-400')}`}></div>
-          <span>{task.subject}</span>
-          <span className="mx-2">·</span>
-          <span>{task.category}</span>
+      <div onClick={() => onEditTask(task)} className="flex-1 cursor-pointer">
+        <p className={`font-medium text-gray-800 group-hover:text-blue-600 ${task.completed ? 'line-through text-gray-400' : ''}`}>{task.title}</p>
+        <div className="flex items-center text-sm text-gray-500 mt-1 flex-wrap">
+          <div className="flex items-center mr-2">
+            <div className={`w-2.5 h-2.5 rounded-full mr-2 ${color.bg.replace('bg-','bg-').replace('-100','-400')}`}></div>
+            <span>{task.subject}</span>
+          </div>
+          <span className="hidden sm:inline mx-2">·</span>
+          <span className="mr-2">{task.category}</span>
+          <span className="hidden sm:inline mx-2">·</span>
+          <span className="font-semibold text-gray-600">Task</span>
         </div>
         {task.reminder && task.reminder !== 'None' && (
           <div className="flex items-center text-xs text-gray-500 mt-1">
@@ -38,7 +43,7 @@ const TaskItem: React.FC<{ task: Task; onToggleTask: (taskId: string) => void }>
   );
 };
 
-const Agenda: React.FC<AgendaProps> = ({ tasks, onToggleTask }) => {
+const Agenda: React.FC<AgendaProps> = ({ tasks, onToggleTask, onEditTask }) => {
   const isSameDay = (d1: Date, d2: Date) =>
     d1.getFullYear() === d2.getFullYear() &&
     d1.getMonth() === d2.getMonth() &&
@@ -92,11 +97,13 @@ const Agenda: React.FC<AgendaProps> = ({ tasks, onToggleTask }) => {
       <div key={title} className="mb-8">
         <div className="flex items-baseline mb-2">
             <h2 className="text-xl font-bold text-gray-800">{title}</h2>
-            <p className="ml-3 text-sm text-gray-500">{formatDateHeader(title === 'Today' ? new Date() : new Date(new Date().setDate(new Date().getDate() + 1)))}</p>
+            { (title === 'Today' || title === 'Tomorrow') &&
+              <p className="ml-3 text-sm text-gray-500">{formatDateHeader(title === 'Today' ? new Date() : new Date(new Date().setDate(new Date().getDate() + 1)))}</p>
+            }
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y divide-gray-200 px-4">
             {sortedTasks.map(task => (
-                <TaskItem key={task.id} task={task} onToggleTask={onToggleTask} />
+                <TaskItem key={task.id} task={task} onToggleTask={onToggleTask} onEditTask={onEditTask} />
             ))}
         </div>
       </div>
@@ -116,7 +123,7 @@ const Agenda: React.FC<AgendaProps> = ({ tasks, onToggleTask }) => {
             <h2 className="text-xl font-bold text-gray-800 mb-2">Upcoming</h2>
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y divide-gray-200 px-4">
                 {groupedTasks['Upcoming'].map(task => (
-                    <TaskItem key={task.id} task={task} onToggleTask={onToggleTask} />
+                    <TaskItem key={task.id} task={task} onToggleTask={onToggleTask} onEditTask={onEditTask} />
                 ))}
             </div>
         </div>
