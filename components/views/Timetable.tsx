@@ -1,0 +1,80 @@
+import React from 'react';
+import type { ClassEvent } from '../../types';
+import { SUBJECT_COLORS } from '../../constants';
+
+interface TimetableProps {
+  classes: ClassEvent[];
+}
+
+const Timetable: React.FC<TimetableProps> = ({ classes }) => {
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const hours = Array.from({ length: 12 }, (_, i) => 8 + i); // 8 AM to 7 PM
+
+  const timeToPosition = (time: string) => {
+    const [hour, minute] = time.split(':').map(Number);
+    return (hour - 8) * 60 + minute;
+  };
+
+  return (
+    <div className="p-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Timetable</h1>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="grid grid-cols-8">
+          <div />
+          {days.slice(1).concat(days.slice(0,1)).map(day => ( // Mon-Sun
+            <div key={day} className="text-center font-semibold text-gray-600 pb-4">{day}</div>
+          ))}
+
+          {/* Time column */}
+          <div className="col-span-1 pr-4">
+            {hours.map(hour => (
+              <div key={hour} className="h-20 flex justify-end">
+                <span className="text-sm text-gray-400 -mt-2">{hour > 12 ? hour - 12 : hour}:00 {hour >= 12 ? 'PM' : 'AM'}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Schedule grid */}
+          <div className="col-span-7 grid grid-cols-7 relative">
+             {/* Horizontal Lines */}
+            {hours.map((_, index) => (
+              <div key={`line-${index}`} className="col-span-7 border-t border-gray-100 h-20"></div>
+            ))}
+
+            {/* Vertical Lines */}
+            {days.slice(0, 6).map((_, index) => (
+              <div key={`vline-${index}`} className="absolute top-0 bottom-0 border-l border-gray-100" style={{left: `${(index + 1) * (100/7)}%`}}></div>
+            ))}
+
+            {/* Events */}
+            {classes.map(classEvent => {
+              const top = timeToPosition(classEvent.startTime) * (80 / 60); // 80px per 60 mins
+              const duration = timeToPosition(classEvent.endTime) - timeToPosition(classEvent.startTime);
+              const height = duration * (80 / 60);
+              const color = SUBJECT_COLORS[classEvent.subject] || SUBJECT_COLORS['Default'];
+
+              const dayIndex = classEvent.day === 0 ? 6 : classEvent.day - 1; // Adjust for Mon first
+
+              return (
+                <div
+                  key={classEvent.id}
+                  className={`absolute w-[calc(100%/7-4px)] mx-[2px] p-2 rounded-lg flex flex-col justify-between ${color.bg} ${color.text}`}
+                  style={{
+                    top: `${top}px`,
+                    height: `${height}px`,
+                    left: `${dayIndex * (100 / 7)}%`,
+                  }}
+                >
+                  <p className="font-bold text-sm">{classEvent.subject}</p>
+                  <p className="text-xs">{classEvent.startTime} - {classEvent.endTime}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Timetable;
