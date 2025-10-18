@@ -1,12 +1,10 @@
-export type View = 'Overview' | 'Agenda' | 'Timetable' | 'Calendar' | 'GradeTracker';
+import type { User as FirebaseUser } from 'firebase/auth';
 
 export enum TaskCategory {
   Homework = 'Homework',
-  Study = 'Study Session',
+  Study = 'Study',
   Exam = 'Exam',
   Project = 'Project',
-  Break = 'Break',
-  Lunch = 'Lunch',
   Personal = 'Personal',
   Other = 'Other',
 }
@@ -41,17 +39,21 @@ export interface ClassEvent {
 }
 
 export interface Subject {
-    id: string;
-    name: string;
-    credits: number;
-    goal: number;
+  id: string;
+  name: string;
+  credits: number;
+  goal: number;
 }
 
 export interface Grade {
-    id:string;
-    subjectId: string;
-    name: string;
-    score: number;
-    total: number;
-    weight: number;
+  id: string;
+  subjectId: string;
+  name: string;
+  score: number;
+  total: number;
+  weight: number;
 }
+
+export type User = FirebaseUser | { uid: string; isGuest: true; email: string | null; };
+
+export type View = 'Overview' | 'Agenda' | 'Timetable' | 'Calendar' | 'Grades' | 'Profile';

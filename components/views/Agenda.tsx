@@ -1,7 +1,7 @@
 import React from 'react';
 import { type Task } from '../../types';
 import { SUBJECT_COLORS } from '../../constants';
-import { CheckCircleIcon, CircleIcon, BellIcon } from '../icons';
+import { CheckCircleIcon, CircleIcon, BellIcon, ListIcon } from '../icons';
 
 interface AgendaProps {
   tasks: Task[];
@@ -95,10 +95,10 @@ const Agenda: React.FC<AgendaProps> = ({ tasks, onToggleTask, onEditTask }) => {
 
     return (
       <div key={title} className="mb-8">
-        <div className="flex items-baseline mb-2">
+        <div className="flex items-baseline mb-2 flex-wrap">
             <h2 className="text-xl font-bold text-gray-800">{title}</h2>
             { (title === 'Today' || title === 'Tomorrow') &&
-              <p className="ml-3 text-sm text-gray-500">{formatDateHeader(title === 'Today' ? new Date() : new Date(new Date().setDate(new Date().getDate() + 1)))}</p>
+              <p className="ml-0 sm:ml-3 text-sm text-gray-500">{formatDateHeader(title === 'Today' ? new Date() : new Date(new Date().setDate(new Date().getDate() + 1)))}</p>
             }
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y divide-gray-200 px-4">
@@ -111,23 +111,33 @@ const Agenda: React.FC<AgendaProps> = ({ tasks, onToggleTask, onEditTask }) => {
   };
   
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Agenda</h1>
       </div>
-      {renderTaskGroup('Today', groupedTasks['Today'])}
-      {renderTaskGroup('Tomorrow', groupedTasks['Tomorrow'])}
-      {/* For upcoming, we could further group by date */}
-      {groupedTasks['Upcoming'].length > 0 &&
-        <div className="mb-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Upcoming</h2>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y divide-gray-200 px-4">
-                {groupedTasks['Upcoming'].map(task => (
-                    <TaskItem key={task.id} task={task} onToggleTask={onToggleTask} onEditTask={onEditTask} />
-                ))}
-            </div>
+      {tasks.length > 0 ? (
+        <>
+            {renderTaskGroup('Today', groupedTasks['Today'])}
+            {renderTaskGroup('Tomorrow', groupedTasks['Tomorrow'])}
+            {/* For upcoming, we could further group by date */}
+            {groupedTasks['Upcoming'].length > 0 &&
+                <div className="mb-8">
+                    <h2 className="text-xl font-bold text-gray-800 mb-2">Upcoming</h2>
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y divide-gray-200 px-4">
+                        {groupedTasks['Upcoming'].sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime()).map(task => (
+                            <TaskItem key={task.id} task={task} onToggleTask={onToggleTask} onEditTask={onEditTask} />
+                        ))}
+                    </div>
+                </div>
+            }
+        </>
+      ) : (
+        <div className="text-center py-16">
+            <ListIcon className="w-16 h-16 mx-auto text-gray-300" />
+            <h2 className="mt-4 text-2xl font-bold text-gray-800">All Clear!</h2>
+            <p className="mt-2 text-gray-500">You have no upcoming tasks. Click the '+' button to add one.</p>
         </div>
-      }
+      )}
     </div>
   );
 };

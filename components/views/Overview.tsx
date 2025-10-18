@@ -80,35 +80,37 @@ const Overview: React.FC<OverviewProps> = ({ tasks, classes, onEdit }) => {
     });
 
   return (
-    <div className="p-8 grid grid-cols-3 gap-8">
-      <div className="col-span-3">
+    <div className="p-4 md:p-8">
+      <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Overview</h1>
         <p className="text-gray-500 mt-1">
             Welcome back! Here's what's on your plate.
         </p>
       </div>
 
-      {/* Left Column - Today's Events */}
-      <div className="col-span-3 lg:col-span-1">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-full">
-            <h2 className="text-xl font-bold text-gray-800 mb-1">Today</h2>
-            <p className="text-sm text-gray-500 mb-4">{today.toDateString()}</p>
-            <div className="space-y-3">
-                {todayEvents.length > 0 ? (
-                    todayEvents.map(event => <TodayEvent key={event.id} event={event} onEdit={onEdit} />)
-                ) : (
-                    <p className="text-gray-500 text-center py-8">No events scheduled for today. Enjoy your day!</p>
-                )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column - Today's Events */}
+        <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-full">
+                <h2 className="text-xl font-bold text-gray-800 mb-1">Today</h2>
+                <p className="text-sm text-gray-500 mb-4">{today.toDateString()}</p>
+                <div className="space-y-3">
+                    {todayEvents.length > 0 ? (
+                        todayEvents.map(event => <TodayEvent key={event.id} event={event} onEdit={onEdit} />)
+                    ) : (
+                        <p className="text-gray-500 text-center py-8">No events scheduled for today. Enjoy your day!</p>
+                    )}
+                </div>
             </div>
         </div>
-      </div>
-      
-      {/* Right Column - Weekly Report */}
-      <div className="col-span-3 lg:col-span-2 space-y-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-1">Weekly Report</h2>
-            <p className="text-sm text-gray-500 mb-4">{tasks.length} events this week</p>
-            <WeeklyReportChart tasks={tasks} />
+        
+        {/* Right Column - Weekly Report */}
+        <div className="lg:col-span-2 space-y-8">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-1">Weekly Report</h2>
+                <p className="text-sm text-gray-500 mb-4">{tasks.length} events this week</p>
+                <WeeklyReportChart tasks={tasks} />
+            </div>
         </div>
       </div>
     </div>

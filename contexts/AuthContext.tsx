@@ -1,0 +1,100 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { 
+  onAuthStateChanged, 
+  signOut, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  GoogleAuthProvider, 
+  signInWithPopup,
+  sendPasswordResetEmail,
+  User as FirebaseUser,
+} from "firebase/auth";
+import { auth } from '../firebase';
+import { type User } from '../types';
+
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  login: (email: string, pass: string) => Promise<any>;
+  signup: (email: string, pass: string) => Promise<any>;
+  logout: () => Promise<void>;
+  signInWithGoogle: () => Promise<any>;
+  resetPassword: (email: string) => Promise<void>;
+  loginAsGuest: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
+  return context;
+};
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!auth) {
+        console.warn("Firebase Auth is not initialized. Running in offline mode.");
+        setLoading(false);
+        return;
+    }
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+        setUser(firebaseUser);
+        setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const signup = (email: string, pass: string) => {
+    if(!auth) return Promise.reject("Firebase not initialized");
+    return createUserWithEmailAndPassword(auth, email, pass);
+  };
+
+  const login = (email: string, pass: string) => {
+    if(!auth) return Promise.reject("Firebase not initialized");
+    return signInWithEmailAndPassword(auth, email, pass);
+  };
+  
+  const loginAsGuest = () => {
+    setUser({
+      uid: 'guest',
+      isGuest: true,
+      email: 'guest@example.com'
+    });
+  };
+
+  const logout = () => {
+    if (!auth) { // Handle guest logout
+        setUser(null);
+        return Promise.resolve();
+    }
+    return signOut(auth);
+  };
+  
+  const signInWithGoogle = () => {
+    if(!auth) return Promise.reject("Firebase not initialized");
+    const googleProvider = new GoogleAuthProvider();
+    return signInWithPopup(auth, googleProvider);
+  };
+  
+  const resetPassword = (email: string) => {
+    if(!auth) return Promise.reject("Firebase not initialized");
+    return sendPasswordResetEmail(auth, email);
+  };
+
+  const value: AuthContextType = {
+    user,
+    loading,
+    login,
+    signup,
+    logout,
+    signInWithGoogle,
+    resetPassword,
+    loginAsGuest
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

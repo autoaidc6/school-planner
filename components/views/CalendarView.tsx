@@ -42,17 +42,17 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, classes, onEdit }) =
   };
   
   return (
-    <div className="p-8 h-full flex flex-col">
+    <div className="p-4 md:p-8 h-full flex flex-col">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Calendar</h1>
-      <div className="flex flex-grow gap-8">
-        <div className="w-2/3 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="flex flex-col lg:flex-row flex-grow gap-8">
+        <div className="w-full lg:w-2/3 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex justify-between items-center mb-4">
-            <button onClick={() => changeMonth(-1)}>&lt;</button>
+            <button onClick={() => changeMonth(-1)} className="p-2 rounded-md hover:bg-gray-100">&lt;</button>
             <h2 className="text-xl font-semibold">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
-            <button onClick={() => changeMonth(1)}>&gt;</button>
+            <button onClick={() => changeMonth(1)} className="p-2 rounded-md hover:bg-gray-100">&gt;</button>
           </div>
           <div className="grid grid-cols-7 gap-1 text-center text-sm text-gray-500 font-medium">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d}>{d}</div>)}
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => <div key={d}>{d}</div>)}
           </div>
           <div className="grid grid-cols-7 gap-1 mt-2">
             {days.map(d => {
@@ -62,7 +62,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, classes, onEdit }) =
               const dayEvents = eventsForDay(d);
               
               return (
-                <div key={d.toString()} className={`p-2 border border-transparent rounded-lg cursor-pointer transition-colors hover:bg-gray-100 ${isCurrentMonth ? '' : 'text-gray-300'}`} onClick={() => setSelectedDate(d)}>
+                <div key={d.toString()} className={`aspect-square p-1 border border-transparent rounded-lg cursor-pointer transition-colors hover:bg-gray-100 ${isCurrentMonth ? '' : 'text-gray-300'}`} onClick={() => setSelectedDate(d)}>
                   <div className={`mx-auto w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isToday ? 'bg-blue-600 text-white' : ''} ${isSelected ? 'border-2 border-blue-400' : ''}`}>
                     {d.getDate()}
                   </div>
@@ -79,7 +79,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, classes, onEdit }) =
             })}
           </div>
         </div>
-        <div className="w-1/3">
+        <div className="w-full lg:w-1/3">
             <h3 className="text-xl font-semibold text-gray-800">{selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
             <div className="mt-4 space-y-4">
                 <div>
