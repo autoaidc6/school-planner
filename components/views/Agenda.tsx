@@ -1,7 +1,7 @@
 import React from 'react';
 import { type Task } from '../../types';
 import { SUBJECT_COLORS } from '../../constants';
-import { CheckCircleIcon, CircleIcon, BellIcon, ListIcon } from '../icons';
+import { CheckCircleIcon, CircleIcon, BellIcon, ListIcon, ClockIcon } from '../icons';
 
 interface AgendaProps {
   tasks: Task[];
@@ -26,6 +26,12 @@ const TaskItem: React.FC<{ task: Task; onToggleTask: (taskId: string) => void; o
           </div>
           <span className="hidden sm:inline mx-2">·</span>
           <span className="mr-2">{task.category}</span>
+          {task.startTime && (
+            <>
+              <span className="hidden sm:inline mx-2">·</span>
+              <span className="flex items-center mr-2"><ClockIcon className="w-3.5 h-3.5 mr-1 text-gray-400" /> {task.startTime}{task.endTime ? ` - ${task.endTime}` : ''}</span>
+            </>
+          )}
           <span className="hidden sm:inline mx-2">·</span>
           <span className="font-semibold text-gray-600">Task</span>
         </div>

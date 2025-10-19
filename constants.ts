@@ -27,6 +27,8 @@ export const INITIAL_TASKS: Task[] = [
     completed: false,
     description: 'Chapter 3, problems 1-15.',
     reminder: ReminderOption.OneHour,
+    startTime: '14:00',
+    endTime: '15:30',
   },
   {
     id: '2',
@@ -67,6 +69,7 @@ export const INITIAL_CLASSES: ClassEvent[] = [
     day: 1, // Monday
     startTime: '09:00',
     endTime: '10:30',
+    description: 'Room 201, Professor Smith. Covering advanced calculus.',
     reminder: ReminderOption.FifteenMin,
   },
   {
@@ -75,6 +78,7 @@ export const INITIAL_CLASSES: ClassEvent[] = [
     day: 2, // Tuesday
     startTime: '11:00',
     endTime: '12:30',
+    description: 'Physics Lab B. Bring safety goggles.',
     reminder: ReminderOption.FifteenMin,
   },
   {
@@ -83,6 +87,7 @@ export const INITIAL_CLASSES: ClassEvent[] = [
     day: 1, // Monday
     startTime: '13:00',
     endTime: '14:00',
+    description: '',
     reminder: ReminderOption.None,
   },
   {
@@ -91,6 +96,7 @@ export const INITIAL_CLASSES: ClassEvent[] = [
     day: 3, // Wednesday
     startTime: '10:00',
     endTime: '12:00',
+    description: 'Data Structures & Algorithms. CS Building, Room 105.',
     reminder: ReminderOption.FifteenMin,
   }
 ];

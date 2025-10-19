@@ -41,7 +41,10 @@ const TodayEvent: React.FC<{ event: Task | ClassEvent, onEdit: (event: Task | Cl
 
     const getTime = () => {
         if (isTask) {
-            return new Date(event.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            if (event.startTime) {
+                return `${event.startTime}${event.endTime ? ` - ${event.endTime}` : ''}`;
+            }
+            return `Due today`;
         }
         return `${event.startTime} - ${event.endTime}`;
     }
@@ -70,12 +73,12 @@ const Overview: React.FC<OverviewProps> = ({ tasks, classes, onEdit }) => {
     const today = new Date();
     const isSameDay = (d1: Date, d2: Date) => d1.toDateString() === d2.toDateString();
 
-    const todayTasks = tasks.filter(task => isSameDay(new Date(task.dueDate), today));
+    const todayTasks = tasks.filter(task => isSameDay(new Date(task.dueDate), today) && !task.completed);
     const todayClasses = classes.filter(cls => cls.day === today.getDay());
     
     const todayEvents = [...todayTasks, ...todayClasses].sort((a, b) => {
-        const timeA = 'dueDate' in a ? new Date(a.dueDate).getTime() : a.startTime.replace(':', '');
-        const timeB = 'dueDate' in b ? new Date(b.dueDate).getTime() : b.startTime.replace(':', '');
+        const timeA = 'startTime' in a && a.startTime ? a.startTime.replace(':', '') : ('dueDate' in a ? '2359' : '0000');
+        const timeB = 'startTime' in b && b.startTime ? b.startTime.replace(':', '') : ('dueDate' in b ? '2359' : '0000');
         return Number(timeA) - Number(timeB);
     });
 

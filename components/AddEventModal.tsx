@@ -33,12 +33,14 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onSaveEvent, eve
   // Common fields
   const [subject, setSubject] = useState(Object.keys(SUBJECT_COLORS)[0]);
   const [reminder, setReminder] = useState<ReminderOption>(ReminderOption.None);
+  const [description, setDescription] = useState('');
 
   // Task fields
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<TaskCategory>(TaskCategory.Homework);
   const [dueDate, setDueDate] = useState(defaultDate ? dateToInputValue(defaultDate) : dateToInputValue(new Date()));
-  const [description, setDescription] = useState('');
+  const [taskStartTime, setTaskStartTime] = useState('');
+  const [taskEndTime, setTaskEndTime] = useState('');
   
   // Class fields
   const [day, setDay] = useState(1);
@@ -57,6 +59,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onSaveEvent, eve
         setDueDate(dateToInputValue(eventToEdit.dueDate));
         setDescription(eventToEdit.description);
         setReminder(eventToEdit.reminder);
+        setTaskStartTime(eventToEdit.startTime || '');
+        setTaskEndTime(eventToEdit.endTime || '');
       } else { // is ClassEvent
         setEventType('class');
         setSubject(eventToEdit.subject);
@@ -64,6 +68,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onSaveEvent, eve
         setStartTime(eventToEdit.startTime);
         setEndTime(eventToEdit.endTime);
         setReminder(eventToEdit.reminder);
+        setDescription(eventToEdit.description || '');
       }
     }
   }, [eventToEdit]);
@@ -92,6 +97,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onSaveEvent, eve
         completed: isEditing ? (eventToEdit as Task).completed : false,
         description,
         reminder,
+        startTime: taskStartTime,
+        endTime: taskEndTime,
       };
       onSaveEvent(newTask);
     } else {
@@ -101,6 +108,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onSaveEvent, eve
             day,
             startTime,
             endTime,
+            description,
             reminder
         };
         onSaveEvent(newClass);
@@ -158,6 +166,16 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onSaveEvent, eve
                         <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700">Due Date</label>
                         <input type="date" id="dueDate" value={dueDate} onChange={e => setDueDate(e.target.value)} required className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2" />
                     </div>
+                    <div className="flex gap-4">
+                        <div className="w-1/2">
+                            <label htmlFor="taskStartTime" className="block text-sm font-medium text-gray-700">Start Time <span className="text-gray-400">(Optional)</span></label>
+                            <input type="time" id="taskStartTime" value={taskStartTime} onChange={e => setTaskStartTime(e.target.value)} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2" />
+                        </div>
+                        <div className="w-1/2">
+                            <label htmlFor="taskEndTime" className="block text-sm font-medium text-gray-700">End Time <span className="text-gray-400">(Optional)</span></label>
+                            <input type="time" id="taskEndTime" value={taskEndTime} onChange={e => setTaskEndTime(e.target.value)} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2" />
+                        </div>
+                    </div>
                 </>
                 ) : (
                 <>
@@ -193,20 +211,20 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onSaveEvent, eve
                         ))}
                     </select>
                 </div>
-                {eventType === 'task' && (
-                    <div>
-                        <div className="flex justify-between items-center">
-                            <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description / Sub-tasks</label>
-                            {showAiButton && (
-                                <button type="button" onClick={handleGeneratePlan} disabled={isGenerating} className="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <SparklesIcon className="w-4 h-4 mr-1" />
-                                    {isGenerating ? 'Generating...' : 'AI Study Plan'}
-                                </button>
-                            )}
-                        </div>
-                        <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} rows={4} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"></textarea>
+                <div>
+                    <div className="flex justify-between items-center">
+                        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                            {eventType === 'task' ? 'Description / Sub-tasks' : 'Description'}
+                        </label>
+                        {showAiButton && (
+                            <button type="button" onClick={handleGeneratePlan} disabled={isGenerating} className="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <SparklesIcon className="w-4 h-4 mr-1" />
+                                {isGenerating ? 'Generating...' : 'AI Study Plan'}
+                            </button>
+                        )}
                     </div>
-                )}
+                    <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} rows={4} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"></textarea>
+                </div>
                 <div className="flex justify-end pt-2">
                     <button type="button" onClick={onClose} className="mr-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Cancel</button>
                     <button type="submit" className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">{isEditing ? 'Save Changes' : 'Add Event'}</button>

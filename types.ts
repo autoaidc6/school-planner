@@ -27,6 +27,8 @@ export interface Task {
   completed: boolean;
   description: string;
   reminder: ReminderOption;
+  startTime?: string; // "HH:mm"
+  endTime?: string; // "HH:mm"
 }
 
 export interface ClassEvent {
@@ -35,6 +37,7 @@ export interface ClassEvent {
   day: number; // 0 for Sunday, 1 for Monday, etc.
   startTime: string; // "HH:mm"
   endTime: string; // "HH:mm"
+  description: string;
   reminder: ReminderOption;
 }
 
@@ -46,7 +49,7 @@ export interface Subject {
 }
 
 export interface Grade {
-  id: string;
+  id:string;
   subjectId: string;
   name: string;
   score: number;
