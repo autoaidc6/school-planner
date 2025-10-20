@@ -106,8 +106,8 @@ const Overview: React.FC<OverviewProps> = ({ tasks, classes, onEdit }) => {
     
     const todayEvents = [...tasks.filter(t => isSameDay(new Date(t.dueDate), today) && !t.completed), ...classes.filter(c => c.day === today.getDay())]
       .sort((a, b) => {
-        const timeA = 'startTime' in a ? a.startTime : '23:59';
-        const timeB = 'startTime' in b ? b.startTime : '23:59';
+        const timeA = 'startTime' in a && a.startTime ? a.startTime : '23:59';
+        const timeB = 'startTime' in b && b.startTime ? b.startTime : '23:59';
         return timeA.localeCompare(timeB);
       });
       
@@ -150,10 +150,17 @@ const Overview: React.FC<OverviewProps> = ({ tasks, classes, onEdit }) => {
                                         <div className={`w-2 h-10 rounded-full ${SUBJECT_COLORS[event.subject]?.bg.replace('-100', '-400')}`}></div>
                                         <div className="flex-1">
                                             <p className="font-semibold text-gray-700 group-hover:text-blue-600">{'title' in event ? event.title : event.subject}</p>
-                                            <p className="text-sm text-gray-500">{'startTime' in event ? `${event.startTime} - ${event.endTime}` : 'Due today'}</p>
+                                            <p className="text-sm text-gray-500">
+                                              {'dueDate' in event // Is it a Task?
+                                                ? (event.startTime // Does the task have a start time?
+                                                    ? `${event.startTime}${event.endTime ? ` - ${event.endTime}` : ''}`
+                                                    : 'Due today')
+                                                : `${event.startTime} - ${event.endTime}` // It's a Class
+                                              }
+                                            </p>
                                         </div>
                                         <div className="text-sm font-semibold text-gray-400">
-                                          {'startTime' in event && event.endTime ? `${(new Date(`1970-01-01T${event.endTime}:00`) as any - (new Date(`1970-01-01T${event.startTime}:00`) as any)) / 60000}m` : ''}
+                                          {event.startTime && event.endTime ? `${(new Date(`1970-01-01T${event.endTime}:00`).getTime() - new Date(`1970-01-01T${event.startTime}:00`).getTime()) / 60000}m` : ''}
                                         </div>
                                     </div>
                                 ))

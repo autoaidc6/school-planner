@@ -1,7 +1,7 @@
 import React from 'react';
 import { type Task } from '../../types';
 import { SUBJECT_COLORS } from '../../constants';
-import { CheckCircleIcon, CircleIcon, BellIcon, ListIcon, ClockIcon } from '../icons';
+import { CheckCircleIcon, CircleIcon, BellIcon, ListIcon, ClockIcon, CalendarIcon } from '../icons';
 
 interface AgendaProps {
   tasks: Task[];
@@ -11,6 +11,11 @@ interface AgendaProps {
 
 const TaskItem: React.FC<{ task: Task; onToggleTask: (taskId: string) => void; onEditTask: (task: Task) => void; }> = ({ task, onToggleTask, onEditTask }) => {
   const color = SUBJECT_COLORS[task.subject] || SUBJECT_COLORS['Default'];
+  const formattedDate = new Date(task.dueDate).toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
   
   return (
     <div className="flex items-start space-x-4 py-4 group">
@@ -19,21 +24,25 @@ const TaskItem: React.FC<{ task: Task; onToggleTask: (taskId: string) => void; o
       </button>
       <div onClick={() => onEditTask(task)} className="flex-1 cursor-pointer">
         <p className={`font-medium text-gray-800 group-hover:text-blue-600 ${task.completed ? 'line-through text-gray-400' : ''}`}>{task.title}</p>
-        <div className="flex items-center text-sm text-gray-500 mt-1 flex-wrap">
-          <div className="flex items-center mr-2">
-            <div className={`w-2.5 h-2.5 rounded-full mr-2 ${color.bg.replace('bg-','bg-').replace('-100','-400')}`}></div>
-            <span>{task.subject}</span>
-          </div>
-          <span className="hidden sm:inline mx-2">·</span>
-          <span className="mr-2">{task.category}</span>
-          {task.startTime && (
-            <>
-              <span className="hidden sm:inline mx-2">·</span>
-              <span className="flex items-center mr-2"><ClockIcon className="w-3.5 h-3.5 mr-1 text-gray-400" /> {task.startTime}{task.endTime ? ` - ${task.endTime}` : ''}</span>
-            </>
-          )}
-          <span className="hidden sm:inline mx-2">·</span>
-          <span className="font-semibold text-gray-600">Task</span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 mt-1">
+            <div className="flex items-center">
+                <div className={`w-2.5 h-2.5 rounded-full mr-1.5 ${color.bg.replace('bg-','bg-').replace('-100','-400')}`}></div>
+                <span>{task.subject}</span>
+            </div>
+            <div className="flex items-center">
+                <ListIcon className="w-4 h-4 mr-1.5 text-gray-400" />
+                <span>{task.category}</span>
+            </div>
+            <div className="flex items-center font-medium text-gray-600">
+                <CalendarIcon className="w-4 h-4 mr-1.5 text-gray-400" />
+                <span>{formattedDate}</span>
+            </div>
+            {task.startTime && (
+                <div className="flex items-center">
+                    <ClockIcon className="w-4 h-4 mr-1.5 text-gray-400" />
+                    <span>{task.startTime}{task.endTime ? ` - ${task.endTime}` : ''}</span>
+                </div>
+            )}
         </div>
         {task.reminder && task.reminder !== 'None' && (
           <div className="flex items-center text-xs text-gray-500 mt-1">
