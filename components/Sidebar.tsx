@@ -29,8 +29,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, onAddTask, user
   return (
     <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 p-4">
       <div className="flex items-center mb-8">
-        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-lg">S</div>
-        <h1 className="ml-3 text-xl font-bold text-gray-800">Studier</h1>
+        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">SPP</div>
+        <h1 className="ml-3 text-xl font-bold text-gray-800">School Planner Pro</h1>
       </div>
       <nav className="flex-1 space-y-2">
         {navItems.map(item => (

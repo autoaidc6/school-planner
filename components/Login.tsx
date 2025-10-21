@@ -53,7 +53,7 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center items-center mb-6">
-          <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-2xl">S</div>
+          <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xl">SPP</div>
           <h1 className="ml-4 text-3xl font-bold text-gray-800">School Planner Pro</h1>
         </div>
         

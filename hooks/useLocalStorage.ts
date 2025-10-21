@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+// FIX: Import React to provide the 'React' namespace for types.
+import React, { useState, useEffect } from 'react';
 
 // A custom hook to write to localStorage
 export const useLocalStorage = <T,>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {

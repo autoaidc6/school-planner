@@ -15,6 +15,9 @@ import GradeModal from './components/GradeModal';
 import { useNotifications } from './hooks/useNotifications';
 import BottomNavBar from './components/BottomNavBar';
 import { useAuth } from './contexts/AuthContext';
+import { useFirestoreCollection } from './hooks/useFirestoreCollection';
+import * as firestoreService from './services/firestoreService';
+
 
 interface PlannerProps {
   user: User;
@@ -23,13 +26,28 @@ interface PlannerProps {
 export const Planner: React.FC<PlannerProps> = ({ user }) => {
   const [view, setView] = useState<View>('Overview');
   
-  // Create dynamic keys for localStorage based on user ID
+  // Create dynamic keys for localStorage based on user ID for guests
   const userKey = useMemo(() => user.uid, [user]);
 
-  const [tasks, setTasks] = useLocalStorage<Task[]>(`tasks-${userKey}`, user.isGuest ? INITIAL_TASKS : []);
-  const [classes, setClasses] = useLocalStorage<ClassEvent[]>(`classes-${userKey}`, user.isGuest ? INITIAL_CLASSES : []);
-  const [subjects, setSubjects] = useLocalStorage<Subject[]>(`subjects-${userKey}`, user.isGuest ? INITIAL_SUBJECTS : []);
-  const [grades, setGrades] = useLocalStorage<Grade[]>(`grades-${userKey}`, user.isGuest ? INITIAL_GRADES : []);
+  // LOCAL STATE for guests
+  const [localTasks, setLocalTasks] = useLocalStorage<Task[]>(`tasks-${userKey}`, user.isGuest ? INITIAL_TASKS : []);
+  const [localClasses, setLocalClasses] = useLocalStorage<ClassEvent[]>(`classes-${userKey}`, user.isGuest ? INITIAL_CLASSES : []);
+  const [localSubjects, setLocalSubjects] = useLocalStorage<Subject[]>(`subjects-${userKey}`, user.isGuest ? INITIAL_SUBJECTS : []);
+  const [localGrades, setLocalGrades] = useLocalStorage<Grade[]>(`grades-${userKey}`, user.isGuest ? INITIAL_GRADES : []);
+
+  // FIRESTORE STATE for authenticated users
+  const { data: firestoreTasks, loading: loadingTasks } = useFirestoreCollection<Task>(!user.isGuest ? `users/${user.uid}/tasks` : '');
+  const { data: firestoreClasses, loading: loadingClasses } = useFirestoreCollection<ClassEvent>(!user.isGuest ? `users/${user.uid}/classes` : '');
+  const { data: firestoreSubjects, loading: loadingSubjects } = useFirestoreCollection<Subject>(!user.isGuest ? `users/${user.uid}/subjects` : '');
+  const { data: firestoreGrades, loading: loadingGrades } = useFirestoreCollection<Grade>(!user.isGuest ? `users/${user.uid}/grades` : '');
+
+  // Determine which data source to use
+  const tasks = user.isGuest ? localTasks : firestoreTasks;
+  const classes = user.isGuest ? localClasses : firestoreClasses;
+  const subjects = user.isGuest ? localSubjects : firestoreSubjects;
+  const grades = user.isGuest ? localGrades : firestoreGrades;
+
+  const loadingData = !user.isGuest && (loadingTasks || loadingClasses || loadingSubjects || loadingGrades);
 
   useNotifications([...tasks, ...classes]);
   const { logout } = useAuth();
@@ -52,31 +70,43 @@ export const Planner: React.FC<PlannerProps> = ({ user }) => {
   };
   
   const handleSaveEvent = (event: Task | ClassEvent) => {
-    if ('dueDate' in event) { // Task
-      setTasks(prev => {
-        const index = prev.findIndex(t => t.id === event.id);
+    const { id, ...data } = event;
+    const isTask = 'dueDate' in event;
+    const collectionName = isTask ? 'tasks' : 'classes';
+    // New events from modal have a timestamp-based string ID from Date.now()
+    const isNew = id.length > 15;
+
+    if (user.isGuest) {
+      const setter = isTask ? setLocalTasks : setLocalClasses;
+      setter((prev: any[]) => {
+        if (isNew) return [...prev, event];
+        const index = prev.findIndex((item: any) => item.id === id);
         if (index > -1) {
-          const newTasks = [...prev];
-          newTasks[index] = event;
-          return newTasks;
+          const newItems = [...prev];
+          newItems[index] = event;
+          return newItems;
         }
         return [...prev, event];
       });
-    } else { // ClassEvent
-      setClasses(prev => {
-        const index = prev.findIndex(c => c.id === event.id);
-        if (index > -1) {
-          const newClasses = [...prev];
-          newClasses[index] = event;
-          return newClasses;
-        }
-        return [...prev, event];
-      });
+    } else {
+      if (isNew) {
+        firestoreService.addDocument(user.uid, collectionName, data);
+      } else {
+        firestoreService.updateDocument(user.uid, collectionName, id, data);
+      }
     }
   };
 
   const handleToggleTask = (taskId: string) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t));
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    if (user.isGuest) {
+      setLocalTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t));
+    } else {
+       const { id, ...data } = task;
+       firestoreService.updateDocument(user.uid, 'tasks', id, { ...data, completed: !task.completed });
+    }
   };
   
   const handleAddSubject = () => {
@@ -91,21 +121,41 @@ export const Planner: React.FC<PlannerProps> = ({ user }) => {
 
   const handleDeleteSubject = (subjectId: string) => {
     if (window.confirm('Are you sure you want to delete this subject and all its grades?')) {
-        setSubjects(prev => prev.filter(s => s.id !== subjectId));
-        setGrades(prev => prev.filter(g => g.subjectId !== subjectId));
+        if (user.isGuest) {
+            setLocalSubjects(prev => prev.filter(s => s.id !== subjectId));
+            setLocalGrades(prev => prev.filter(g => g.subjectId !== subjectId));
+        } else {
+            firestoreService.deleteDocument(user.uid, 'subjects', subjectId);
+            // Delete associated grades
+            grades.filter(g => g.subjectId === subjectId).forEach(g => {
+                firestoreService.deleteDocument(user.uid, 'grades', g.id);
+            });
+        }
     }
   };
 
   const handleSaveSubject = (subject: Subject) => {
-    setSubjects(prev => {
-        const index = prev.findIndex(s => s.id === subject.id);
-        if (index > -1) {
-            const newSubjects = [...prev];
-            newSubjects[index] = subject;
-            return newSubjects;
+    const { id, ...data } = subject;
+    const isNew = id.length > 15;
+
+    if(user.isGuest) {
+        setLocalSubjects(prev => {
+            if (isNew) return [...prev, subject];
+            const index = prev.findIndex(s => s.id === id);
+            if (index > -1) {
+                const newSubjects = [...prev];
+                newSubjects[index] = subject;
+                return newSubjects;
+            }
+            return [...prev, subject];
+        });
+    } else {
+        if (isNew) {
+            firestoreService.addDocument(user.uid, 'subjects', data);
+        } else {
+            firestoreService.updateDocument(user.uid, 'subjects', id, data);
         }
-        return [...prev, subject];
-    });
+    }
   };
 
   const handleAddGrade = (subjectId: string) => {
@@ -121,20 +171,44 @@ export const Planner: React.FC<PlannerProps> = ({ user }) => {
   };
 
   const handleDeleteGrade = (gradeId: string) => {
-    setGrades(prev => prev.filter(g => g.id !== gradeId));
+     if(user.isGuest) {
+        setLocalGrades(prev => prev.filter(g => g.id !== gradeId));
+     } else {
+        firestoreService.deleteDocument(user.uid, 'grades', gradeId);
+     }
   };
 
   const handleSaveGrade = (grade: Grade) => {
-    setGrades(prev => {
-        const index = prev.findIndex(g => g.id === grade.id);
-        if (index > -1) {
-            const newGrades = [...prev];
-            newGrades[index] = grade;
-            return newGrades;
+    const { id, ...data } = grade;
+    const isNew = id.length > 15;
+
+    if(user.isGuest) {
+        setLocalGrades(prev => {
+            if (isNew) return [...prev, grade];
+            const index = prev.findIndex(g => g.id === id);
+            if (index > -1) {
+                const newGrades = [...prev];
+                newGrades[index] = grade;
+                return newGrades;
+            }
+            return [...prev, grade];
+        });
+    } else {
+        if (isNew) {
+            firestoreService.addDocument(user.uid, 'grades', data);
+        } else {
+            firestoreService.updateDocument(user.uid, 'grades', id, data);
         }
-        return [...prev, grade];
-    });
+    }
   };
+
+  if (loadingData) {
+    return (
+        <div className="flex h-screen w-screen items-center justify-center bg-gray-50">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+    );
+  }
   
   const renderView = () => {
     switch(view) {

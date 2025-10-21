@@ -11,6 +11,7 @@ import {
 } from "firebase/auth";
 import { auth } from '../firebase';
 import { type User } from '../types';
+import { createUserDataOnSignup } from '../services/firestoreService';
 
 interface AuthContextType {
   user: User | null;
@@ -48,9 +49,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => unsubscribe();
   }, []);
 
-  const signup = (email: string, pass: string) => {
+  const signup = async (email: string, pass: string) => {
     if(!auth) return Promise.reject("Firebase not initialized");
-    return createUserWithEmailAndPassword(auth, email, pass);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+    await createUserDataOnSignup(userCredential.user);
+    return userCredential;
   };
 
   const login = (email: string, pass: string) => {
@@ -74,10 +77,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return signOut(auth);
   };
   
-  const signInWithGoogle = () => {
+  const signInWithGoogle = async () => {
     if(!auth) return Promise.reject("Firebase not initialized");
     const googleProvider = new GoogleAuthProvider();
-    return signInWithPopup(auth, googleProvider);
+    const result = await signInWithPopup(auth, googleProvider);
+    await createUserDataOnSignup(result.user);
+    return result;
   };
   
   const resetPassword = (email: string) => {
