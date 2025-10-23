@@ -21,6 +21,7 @@ export const createUserDataOnSignup = async (user: FirebaseUser) => {
   if (!userDoc.exists()) {
     await setDoc(userDocRef, {
       email: user.email,
+      displayName: user.displayName || user.email?.split('@')[0] || 'Student',
       createdAt: Timestamp.now(),
     });
   }
@@ -47,4 +48,11 @@ export const deleteDocument = async (userId: string, collectionName: string, doc
   if (!db) return Promise.reject('Firestore not initialized');
   const docRef = doc(db, 'users', userId, collectionName, docId);
   return await deleteDoc(docRef);
+};
+
+// Function to update the top-level user document
+export const updateUserDocument = async (userId: string, data: { displayName?: string }) => {
+  if (!db) return Promise.reject('Firestore not initialized');
+  const userDocRef = doc(db, 'users', userId);
+  return await setDoc(userDocRef, data, { merge: true });
 };

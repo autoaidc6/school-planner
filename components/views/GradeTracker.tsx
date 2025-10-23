@@ -1,6 +1,6 @@
 import React from 'react';
 import { type Subject, type Grade } from '../../types';
-import { SUBJECT_COLORS } from '../../constants';
+import { COLOR_PALETTE } from '../../constants';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts';
 import { PlusIcon, EditIcon, TrashIcon, AwardIcon } from '../icons';
 
@@ -85,7 +85,7 @@ const GradeTracker: React.FC<GradeTrackerProps> = ({ subjects, grades, onAddSubj
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {subjects.map(subject => {
           const { grade } = calculateCurrentGrade(subject.id);
-          const color = SUBJECT_COLORS[subject.name] || SUBJECT_COLORS['Default'];
+          const color = COLOR_PALETTE[subject.color] || COLOR_PALETTE['gray'];
 
           return (
             <div key={subject.id} className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 border-l-4 ${color.border}`}>

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { INITIAL_TASKS, INITIAL_CLASSES, INITIAL_SUBJECTS, INITIAL_GRADES } from './constants';
-import { type Task, type ClassEvent, type Subject, type Grade, type User, type View } from './types';
+import { type Task, type ClassEvent, type Subject, type Grade, type User, type View, RecurrenceOption, PlannerEvent } from './types';
 import Sidebar from './components/Sidebar';
 import Overview from './components/views/Overview';
 import Agenda from './components/views/Agenda';
@@ -9,6 +9,7 @@ import Timetable from './components/views/Timetable';
 import CalendarView from './components/views/CalendarView';
 import GradeTracker from './components/views/GradeTracker';
 import Profile from './components/views/Profile';
+import Focus from './components/views/Focus';
 import AddEventModal from './components/AddEventModal';
 import SubjectModal from './components/SubjectModal';
 import GradeModal from './components/GradeModal';
@@ -62,8 +63,20 @@ export const Planner: React.FC<PlannerProps> = ({ user }) => {
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
   const [gradeToEdit, setGradeToEdit] = useState<Grade | null>(null);
   const [currentSubjectIdForGrade, setCurrentSubjectIdForGrade] = useState<string>('');
+  
+  const [focusedEvent, setFocusedEvent] = useState<Task | ClassEvent | null>(null);
 
-  const handleOpenEventModal = (event?: Task | ClassEvent, date?: Date) => {
+  const handleStartFocus = (event: Task | ClassEvent) => {
+    setFocusedEvent(event);
+    setView('Focus');
+  };
+
+  const handleEndFocus = () => {
+    setFocusedEvent(null);
+    setView('Overview'); 
+  };
+
+  const handleOpenEventModal = (event?: PlannerEvent, date?: Date) => {
     setEventToEdit(event || null);
     setDefaultDate(date);
     setIsEventModalOpen(true);
@@ -96,19 +109,81 @@ export const Planner: React.FC<PlannerProps> = ({ user }) => {
       }
     }
   };
+  
+  const handleDeleteEvent = (id: string, type: 'task' | 'class') => {
+    const collectionName = type === 'task' ? 'tasks' : 'classes';
+    if (user.isGuest) {
+        const setter = type === 'task' ? setLocalTasks : setLocalClasses;
+        setter((prev: any[]) => prev.filter(item => item.id !== id));
+    } else {
+        firestoreService.deleteDocument(user.uid, collectionName, id);
+    }
+  };
 
   const handleToggleTask = (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    if (user.isGuest) {
-      setLocalTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t));
-    } else {
-       const { id, ...data } = task;
-       firestoreService.updateDocument(user.uid, 'tasks', id, { ...data, completed: !task.completed });
+    // Handle recurring tasks: create the next instance instead of just completing it.
+    if (task.recurrence && task.recurrence !== RecurrenceOption.None && !task.completed) {
+        const newDueDate = new Date(task.dueDate);
+        switch(task.recurrence) {
+            case RecurrenceOption.Daily:
+                newDueDate.setDate(newDueDate.getDate() + 1);
+                break;
+            case RecurrenceOption.Weekly:
+                newDueDate.setDate(newDueDate.getDate() + 7);
+                break;
+            case RecurrenceOption.Monthly:
+                newDueDate.setMonth(newDueDate.getMonth() + 1);
+                break;
+        }
+        const updatedTask = { ...task, dueDate: newDueDate };
+        const { id, ...data } = updatedTask;
+
+        if (user.isGuest) {
+            setLocalTasks(prev => prev.map(t => t.id === taskId ? updatedTask : t));
+        } else {
+            firestoreService.updateDocument(user.uid, 'tasks', id, data);
+        }
+    } else { // Handle non-recurring tasks
+        if (user.isGuest) {
+            setLocalTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t));
+        } else {
+            const { id, ...data } = task;
+            firestoreService.updateDocument(user.uid, 'tasks', id, { ...data, completed: !task.completed });
+        }
     }
   };
   
+  const handleRescheduleClass = (classId: string, newDay: number, newStartTime: string, newEndTime: string) => {
+    const classToUpdate = classes.find(c => c.id === classId);
+    if (!classToUpdate) return;
+    
+    const updatedClass = { ...classToUpdate, day: newDay, startTime: newStartTime, endTime: newEndTime };
+    
+    if (user.isGuest) {
+        setLocalClasses(prev => prev.map(c => c.id === classId ? updatedClass : c));
+    } else {
+        const { id, ...data } = updatedClass;
+        firestoreService.updateDocument(user.uid, 'classes', id, data);
+    }
+  };
+  
+  const handleRescheduleTask = (taskId: string, newDate: Date, newStartTime: string, newEndTime: string) => {
+    const taskToUpdate = tasks.find(t => t.id === taskId);
+    if (!taskToUpdate) return;
+    
+    const updatedTask = { ...taskToUpdate, dueDate: newDate, startTime: newStartTime, endTime: newEndTime };
+    
+    if (user.isGuest) {
+        setLocalTasks(prev => prev.map(t => t.id === taskId ? updatedTask : t));
+    } else {
+        const { id, ...data } = updatedTask;
+        firestoreService.updateDocument(user.uid, 'tasks', id, data);
+    }
+  };
+
   const handleAddSubject = () => {
     setSubjectToEdit(null);
     setIsSubjectModalOpen(true);
@@ -213,13 +288,20 @@ export const Planner: React.FC<PlannerProps> = ({ user }) => {
   const renderView = () => {
     switch(view) {
       case 'Overview':
-        return <Overview tasks={tasks} classes={classes} onEdit={handleOpenEventModal} />;
+        return <Overview tasks={tasks} classes={classes} subjects={subjects} onEdit={handleOpenEventModal} onStartFocus={handleStartFocus} />;
       case 'Agenda':
-        return <Agenda tasks={tasks} onToggleTask={handleToggleTask} onEditTask={(task) => handleOpenEventModal(task)} />;
+        return <Agenda tasks={tasks} subjects={subjects} onToggleTask={handleToggleTask} onEditTask={(task) => handleOpenEventModal(task)} onStartFocus={handleStartFocus} />;
       case 'Timetable':
-        return <Timetable classes={classes} onEdit={(cls) => handleOpenEventModal(cls)} />;
+        return <Timetable 
+            classes={classes} 
+            tasks={tasks}
+            subjects={subjects}
+            onEdit={handleOpenEventModal} 
+            onRescheduleClass={handleRescheduleClass}
+            onRescheduleTask={handleRescheduleTask}
+        />;
       case 'Calendar':
-        return <CalendarView tasks={tasks} classes={classes} onEdit={handleOpenEventModal} />;
+        return <CalendarView tasks={tasks} classes={classes} subjects={subjects} onEdit={handleOpenEventModal} onStartFocus={handleStartFocus} />;
       case 'Grades':
         return <GradeTracker 
             subjects={subjects} 
@@ -231,10 +313,12 @@ export const Planner: React.FC<PlannerProps> = ({ user }) => {
             onEditGrade={handleEditGrade}
             onDeleteGrade={handleDeleteGrade}
         />;
+      case 'Focus':
+        return <Focus focusedEvent={focusedEvent} onEndFocus={handleEndFocus} />;
       case 'Profile':
-        return <Profile user={user} onLogout={logout} />;
+        return <Profile user={user} onLogout={logout} tasks={tasks} grades={grades} subjects={subjects} />;
       default:
-        return <Overview tasks={tasks} classes={classes} onEdit={handleOpenEventModal} />;
+        return <Overview tasks={tasks} classes={classes} subjects={subjects} onEdit={handleOpenEventModal} onStartFocus={handleStartFocus} />;
     }
   };
 
@@ -245,7 +329,7 @@ export const Planner: React.FC<PlannerProps> = ({ user }) => {
         {renderView()}
       </main>
       <BottomNavBar currentView={view} setView={setView} onAddTask={() => handleOpenEventModal()} />
-      {isEventModalOpen && <AddEventModal onClose={() => setIsEventModalOpen(false)} onSaveEvent={handleSaveEvent} eventToEdit={eventToEdit} defaultDate={defaultDate} />}
+      {isEventModalOpen && <AddEventModal subjects={subjects} onClose={() => setIsEventModalOpen(false)} onSaveEvent={handleSaveEvent} onDeleteEvent={handleDeleteEvent} eventToEdit={eventToEdit} defaultDate={defaultDate} onStartFocus={handleStartFocus} />}
       {isSubjectModalOpen && <SubjectModal onClose={() => setIsSubjectModalOpen(false)} onSave={handleSaveSubject} subjectToEdit={subjectToEdit} />}
       {isGradeModalOpen && <GradeModal onClose={() => setIsGradeModalOpen(false)} onSave={handleSaveGrade} gradeToEdit={gradeToEdit} subjectId={currentSubjectIdForGrade} />}
     </div>

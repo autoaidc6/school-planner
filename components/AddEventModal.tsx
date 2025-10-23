@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { TaskCategory, ReminderOption, type Task, type ClassEvent } from '../types';
-import { SUBJECT_COLORS } from '../constants';
-import { SparklesIcon, XIcon } from './icons';
+import { TaskCategory, ReminderOption, RecurrenceOption, type Task, type ClassEvent, type Subject } from '../types';
+import { SparklesIcon, XIcon, TrashIcon, PlayIcon } from './icons';
 import { generateStudyPlan } from '../services/geminiService';
 
 interface AddEventModalProps {
+  subjects: Subject[];
   onClose: () => void;
   onSaveEvent: (event: Task | ClassEvent) => void;
+  onDeleteEvent: (id: string, type: 'task' | 'class') => void;
   eventToEdit?: Task | ClassEvent | null;
   defaultDate?: Date;
+  onStartFocus?: (event: Task | ClassEvent) => void;
 }
 
 const ACADEMIC_CATEGORIES = [TaskCategory.Homework, TaskCategory.Study, TaskCategory.Exam, TaskCategory.Project];
@@ -26,12 +28,12 @@ const inputValueToDate = (value: string): Date => {
 };
 
 
-const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onSaveEvent, eventToEdit, defaultDate }) => {
+const AddEventModal: React.FC<AddEventModalProps> = ({ subjects, onClose, onSaveEvent, onDeleteEvent, eventToEdit, defaultDate, onStartFocus }) => {
   const isEditing = !!eventToEdit;
   const [eventType, setEventType] = useState<'task' | 'class'>('task');
   
   // Common fields
-  const [subject, setSubject] = useState(Object.keys(SUBJECT_COLORS)[0]);
+  const [subject, setSubject] = useState(subjects.length > 0 ? subjects[0].name : 'Mathematics');
   const [reminder, setReminder] = useState<ReminderOption>(ReminderOption.None);
   const [description, setDescription] = useState('');
 
@@ -41,6 +43,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onSaveEvent, eve
   const [dueDate, setDueDate] = useState(defaultDate ? dateToInputValue(defaultDate) : dateToInputValue(new Date()));
   const [taskStartTime, setTaskStartTime] = useState('');
   const [taskEndTime, setTaskEndTime] = useState('');
+  const [recurrence, setRecurrence] = useState<RecurrenceOption>(RecurrenceOption.None);
   
   // Class fields
   const [day, setDay] = useState(1);
@@ -61,6 +64,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onSaveEvent, eve
         setReminder(eventToEdit.reminder);
         setTaskStartTime(eventToEdit.startTime || '');
         setTaskEndTime(eventToEdit.endTime || '');
+        setRecurrence(eventToEdit.recurrence || RecurrenceOption.None);
       } else { // is ClassEvent
         setEventType('class');
         setSubject(eventToEdit.subject);
@@ -99,6 +103,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onSaveEvent, eve
         reminder,
         startTime: taskStartTime,
         endTime: taskEndTime,
+        recurrence,
       };
       onSaveEvent(newTask);
     } else {
@@ -114,6 +119,21 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onSaveEvent, eve
         onSaveEvent(newClass);
     }
     onClose();
+  };
+
+  const handleDelete = () => {
+    if (eventToEdit && window.confirm('Are you sure you want to delete this event?')) {
+        const type = 'dueDate' in eventToEdit ? 'task' : 'class';
+        onDeleteEvent(eventToEdit.id, type);
+        onClose();
+    }
+  };
+  
+  const handleStartFocus = () => {
+    if (eventToEdit && onStartFocus) {
+        onStartFocus(eventToEdit);
+        onClose();
+    }
   };
 
   const showAiButton = eventType === 'task' && ACADEMIC_CATEGORIES.includes(category);
@@ -146,8 +166,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onSaveEvent, eve
                  <div>
                     <label htmlFor="subject" className="block text-sm font-medium text-gray-700">Subject</label>
                     <select id="subject" value={subject} onChange={e => setSubject(e.target.value)} required className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2 bg-white">
-                        {Object.keys(SUBJECT_COLORS).filter(s => s !== 'Default').map(sub => (
-                        <option key={sub} value={sub}>{sub}</option>
+                        {subjects.map(sub => (
+                           <option key={sub.id} value={sub.name}>{sub.name}</option>
                         ))}
                     </select>
                 </div>
@@ -175,6 +195,14 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onSaveEvent, eve
                             <label htmlFor="taskEndTime" className="block text-sm font-medium text-gray-700">End Time <span className="text-gray-400">(Optional)</span></label>
                             <input type="time" id="taskEndTime" value={taskEndTime} onChange={e => setTaskEndTime(e.target.value)} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2" />
                         </div>
+                    </div>
+                     <div>
+                        <label htmlFor="recurrence" className="block text-sm font-medium text-gray-700">Recurrence</label>
+                        <select id="recurrence" value={recurrence} onChange={e => setRecurrence(e.target.value as RecurrenceOption)} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2 bg-white">
+                            {Object.values(RecurrenceOption).map(opt => (
+                                <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                        </select>
                     </div>
                 </>
                 ) : (
@@ -225,8 +253,28 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onSaveEvent, eve
                     </div>
                     <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} rows={4} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"></textarea>
                 </div>
-                <div className="flex justify-end pt-2">
-                    <button type="button" onClick={onClose} className="mr-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Cancel</button>
+                <div className="flex items-center pt-2">
+                    {isEditing && (
+                        <button 
+                            type="button" 
+                            onClick={handleDelete} 
+                            className="mr-auto py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 flex items-center"
+                        >
+                            <TrashIcon className="w-4 h-4 mr-2" />
+                            Delete
+                        </button>
+                    )}
+                    {isEditing && onStartFocus && eventToEdit && (
+                        <button
+                            type="button"
+                            onClick={handleStartFocus}
+                            className="mr-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center"
+                        >
+                            <PlayIcon className="w-4 h-4 mr-2" />
+                            Start Focus
+                        </button>
+                    )}
+                    <button type="button" onClick={onClose} className="ml-auto mr-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Cancel</button>
                     <button type="submit" className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">{isEditing ? 'Save Changes' : 'Add Event'}</button>
                 </div>
             </form>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { HomeIcon, ListIcon, CalendarIcon, ClockIcon, AwardIcon, PlusIcon, UserIcon, LogOutIcon } from './icons';
+import { HomeIcon, ListIcon, CalendarIcon, ClockIcon, AwardIcon, PlusIcon, UserIcon, LogOutIcon, BrainIcon } from './icons';
 import { type User, type View } from '../types';
 
 interface SidebarProps {
@@ -24,7 +24,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, onAddTask, user
     { view: 'Timetable', label: 'Timetable', icon: <ClockIcon className="w-5 h-5" /> },
     { view: 'Calendar', label: 'Calendar', icon: <CalendarIcon className="w-5 h-5" /> },
     { view: 'Grades', label: 'Grade Tracker', icon: <AwardIcon className="w-5 h-5" /> },
+    { view: 'Focus', label: 'Focus Timer', icon: <BrainIcon className="w-5 h-5" /> },
   ];
+  
+  const getInitials = () => {
+      if (user.isGuest) return 'G';
+      const name = user.displayName || user.email || 'U';
+      return name.charAt(0).toUpperCase();
+  }
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 p-4">
@@ -50,10 +57,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, onAddTask, user
         </button>
         <div className="border-t pt-4">
             <div className="flex items-center">
-                <UserIcon className="w-8 h-8 text-gray-400 p-1 bg-gray-100 rounded-full" />
-                <div className="ml-2 overflow-hidden">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{user.isGuest ? 'Guest User' : user.email}</p>
-                </div>
+                <button onClick={() => setView('Profile')} className="flex items-center flex-1 overflow-hidden cursor-pointer group">
+                    <div className="w-8 h-8 text-gray-600 bg-gray-200 rounded-full flex items-center justify-center font-bold group-hover:ring-2 group-hover:ring-blue-300">
+                        {getInitials()}
+                    </div>
+                    <div className="ml-2 overflow-hidden">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{user.displayName || user.email}</p>
+                    </div>
+                </button>
                 <button onClick={onLogout} className="ml-auto text-gray-500 hover:text-red-600 p-1">
                     <LogOutIcon className="w-5 h-5" />
                 </button>

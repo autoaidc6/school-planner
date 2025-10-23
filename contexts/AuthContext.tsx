@@ -7,11 +7,12 @@ import {
   GoogleAuthProvider, 
   signInWithPopup,
   sendPasswordResetEmail,
+  updateProfile,
   User as FirebaseUser,
 } from "firebase/auth";
 import { auth } from '../firebase';
 import { type User } from '../types';
-import { createUserDataOnSignup } from '../services/firestoreService';
+import { createUserDataOnSignup, updateUserDocument } from '../services/firestoreService';
 
 interface AuthContextType {
   user: User | null;
@@ -22,6 +23,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<any>;
   resetPassword: (email: string) => Promise<void>;
   loginAsGuest: () => void;
+  updateUserProfile: (newName: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,7 +67,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser({
       uid: 'guest',
       isGuest: true,
-      email: 'guest@example.com'
+      email: 'guest@example.com',
+      displayName: 'Guest User'
     });
   };
 
@@ -90,6 +93,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return sendPasswordResetEmail(auth, email);
   };
 
+  const updateUserProfile = async (newName: string) => {
+    if (auth?.currentUser && !user?.isGuest) {
+      await updateProfile(auth.currentUser, { displayName: newName });
+      await updateUserDocument(auth.currentUser.uid, { displayName: newName });
+      // The onAuthStateChanged listener will pick up the change and update the user state.
+      // For immediate feedback, we can manually update the state here.
+      if (auth.currentUser) {
+          setUser({ ...auth.currentUser });
+      }
+    }
+  };
+
+
   const value: AuthContextType = {
     user,
     loading,
@@ -98,7 +114,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     logout,
     signInWithGoogle,
     resetPassword,
-    loginAsGuest
+    loginAsGuest,
+    updateUserProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

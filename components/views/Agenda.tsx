@@ -1,21 +1,24 @@
-import React from 'react';
-import { type Task } from '../../types';
-import { SUBJECT_COLORS } from '../../constants';
-import { CheckCircleIcon, CircleIcon, BellIcon, ListIcon, ClockIcon, CalendarIcon } from '../icons';
+import React, { useMemo } from 'react';
+import { type Task, type Subject } from '../../types';
+import { COLOR_PALETTE } from '../../constants';
+import { CheckCircleIcon, CircleIcon, BellIcon, ListIcon, ClockIcon, CalendarIcon, PlayIcon } from '../icons';
 
 interface AgendaProps {
   tasks: Task[];
+  subjects: Subject[];
   onToggleTask: (taskId: string) => void;
   onEditTask: (task: Task) => void;
+  onStartFocus: (task: Task) => void;
 }
 
-const TaskItem: React.FC<{ task: Task; onToggleTask: (taskId: string) => void; onEditTask: (task: Task) => void; }> = ({ task, onToggleTask, onEditTask }) => {
-  const color = SUBJECT_COLORS[task.subject] || SUBJECT_COLORS['Default'];
+const TaskItem: React.FC<{ task: Task; color: { bg: string; text: string; border: string; }; onToggleTask: (taskId: string) => void; onEditTask: (task: Task) => void; onStartFocus: (task: Task) => void; }> = ({ task, color, onToggleTask, onEditTask, onStartFocus }) => {
   const formattedDate = new Date(task.dueDate).toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
   });
+
+  const bgColor = (color?.bg || COLOR_PALETTE.gray.bg).replace('bg-','bg-').replace('-100','-400');
   
   return (
     <div className="flex items-start space-x-4 py-4 group">
@@ -26,7 +29,7 @@ const TaskItem: React.FC<{ task: Task; onToggleTask: (taskId: string) => void; o
         <p className={`font-medium text-gray-800 group-hover:text-blue-600 ${task.completed ? 'line-through text-gray-400' : ''}`}>{task.title}</p>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 mt-1">
             <div className="flex items-center">
-                <div className={`w-2.5 h-2.5 rounded-full mr-1.5 ${color.bg.replace('bg-','bg-').replace('-100','-400')}`}></div>
+                <div className={`w-2.5 h-2.5 rounded-full mr-1.5 ${bgColor}`}></div>
                 <span>{task.subject}</span>
             </div>
             <div className="flex items-center">
@@ -54,11 +57,26 @@ const TaskItem: React.FC<{ task: Task; onToggleTask: (taskId: string) => void; o
             <p className="text-xs text-green-600 mt-1">Completed on {new Date().toLocaleDateString()}</p>
         )}
       </div>
+      <button onClick={() => onStartFocus(task)} className="p-2 -mr-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-blue-600 transition-colors">
+        <PlayIcon className="w-5 h-5" />
+      </button>
     </div>
   );
 };
 
-const Agenda: React.FC<AgendaProps> = ({ tasks, onToggleTask, onEditTask }) => {
+const Agenda: React.FC<AgendaProps> = ({ tasks, subjects, onToggleTask, onEditTask, onStartFocus }) => {
+  const subjectMap = useMemo(() => 
+    subjects.reduce((acc, subject) => {
+      acc[subject.name] = subject;
+      return acc;
+    }, {} as { [key: string]: Subject }), 
+  [subjects]);
+
+  const getSubjectColor = (subjectName: string) => {
+    const colorName = subjectMap[subjectName]?.color || 'gray';
+    return COLOR_PALETTE[colorName] || COLOR_PALETTE['gray'];
+  };
+
   const isSameDay = (d1: Date, d2: Date) =>
     d1.getFullYear() === d2.getFullYear() &&
     d1.getMonth() === d2.getMonth() &&
@@ -118,7 +136,7 @@ const Agenda: React.FC<AgendaProps> = ({ tasks, onToggleTask, onEditTask }) => {
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y divide-gray-200 px-4">
             {sortedTasks.map(task => (
-                <TaskItem key={task.id} task={task} onToggleTask={onToggleTask} onEditTask={onEditTask} />
+                <TaskItem key={task.id} task={task} color={getSubjectColor(task.subject)} onToggleTask={onToggleTask} onEditTask={onEditTask} onStartFocus={onStartFocus} />
             ))}
         </div>
       </div>
@@ -140,7 +158,7 @@ const Agenda: React.FC<AgendaProps> = ({ tasks, onToggleTask, onEditTask }) => {
                     <h2 className="text-xl font-bold text-gray-800 mb-2">Upcoming</h2>
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y divide-gray-200 px-4">
                         {groupedTasks['Upcoming'].sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime()).map(task => (
-                            <TaskItem key={task.id} task={task} onToggleTask={onToggleTask} onEditTask={onEditTask} />
+                            <TaskItem key={task.id} task={task} color={getSubjectColor(task.subject)} onToggleTask={onToggleTask} onEditTask={onEditTask} onStartFocus={onStartFocus} />
                         ))}
                     </div>
                 </div>

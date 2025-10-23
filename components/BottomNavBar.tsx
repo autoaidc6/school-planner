@@ -1,5 +1,5 @@
 import React from 'react';
-import { HomeIcon, ListIcon, CalendarIcon, PlusIcon, AwardIcon, UserIcon } from './icons';
+import { HomeIcon, ListIcon, PlusIcon, UserIcon, BrainIcon } from './icons';
 import { type View } from '../types';
 
 interface BottomNavBarProps {
@@ -19,7 +19,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentView, setView, onAdd
   const navItems: { view: View; label: string; icon: React.ReactNode }[] = [
     { view: 'Overview', label: 'Overview', icon: <HomeIcon className="w-6 h-6" /> },
     { view: 'Agenda', label: 'Agenda', icon: <ListIcon className="w-6 h-6" /> },
-    { view: 'Grades', label: 'Grades', icon: <AwardIcon className="w-6 h-6" /> },
+    { view: 'Focus', label: 'Focus', icon: <BrainIcon className="w-6 h-6" /> },
     { view: 'Profile', label: 'Profile', icon: <UserIcon className="w-6 h-6" /> },
   ];
 

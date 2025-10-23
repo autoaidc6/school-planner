@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { type Subject } from '../types';
 import { XIcon } from './icons';
+import { COLOR_PALETTE } from '../constants';
 
 interface SubjectModalProps {
   onClose: () => void;
@@ -8,17 +9,25 @@ interface SubjectModalProps {
   subjectToEdit?: Subject | null;
 }
 
+const colorKeys = Object.keys(COLOR_PALETTE);
+
 const SubjectModal: React.FC<SubjectModalProps> = ({ onClose, onSave, subjectToEdit }) => {
   const isEditing = !!subjectToEdit;
   const [name, setName] = useState('');
   const [credits, setCredits] = useState(3);
   const [goal, setGoal] = useState(90);
+  const [color, setColor] = useState(colorKeys[0]);
 
   useEffect(() => {
     if (subjectToEdit) {
       setName(subjectToEdit.name);
       setCredits(subjectToEdit.credits);
       setGoal(subjectToEdit.goal);
+      setColor(subjectToEdit.color);
+    } else {
+      // Assign a default color for new subjects, maybe based on how many subjects already exist
+      // For simplicity, we can just start with the first color or a random one.
+      setColor(colorKeys[Math.floor(Math.random() * colorKeys.length)]);
     }
   }, [subjectToEdit]);
 
@@ -31,6 +40,7 @@ const SubjectModal: React.FC<SubjectModalProps> = ({ onClose, onSave, subjectToE
       name,
       credits,
       goal,
+      color,
     };
     onSave(newSubject);
     onClose();
@@ -50,6 +60,19 @@ const SubjectModal: React.FC<SubjectModalProps> = ({ onClose, onSave, subjectToE
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">Subject Name</label>
               <input type="text" id="name" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Color</label>
+              <div className="mt-2 grid grid-cols-9 gap-2">
+                {colorKeys.map(colorKey => (
+                  <button
+                    key={colorKey}
+                    type="button"
+                    onClick={() => setColor(colorKey)}
+                    className={`w-8 h-8 rounded-full transition-transform transform hover:scale-110 ${COLOR_PALETTE[colorKey].bg.replace('-100', '-400')} ${color === colorKey ? 'ring-2 ring-offset-2 ring-blue-500' : ''}`}
+                  />
+                ))}
+              </div>
             </div>
             <div>
               <label htmlFor="credits" className="block text-sm font-medium text-gray-700">Credits</label>

@@ -18,6 +18,13 @@ export enum ReminderOption {
   OneDay = '1 day before',
 }
 
+export enum RecurrenceOption {
+  None = 'None',
+  Daily = 'Daily',
+  Weekly = 'Weekly',
+  Monthly = 'Monthly',
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -29,6 +36,7 @@ export interface Task {
   reminder: ReminderOption;
   startTime?: string; // "HH:mm"
   endTime?: string; // "HH:mm"
+  recurrence: RecurrenceOption;
 }
 
 export interface ClassEvent {
@@ -46,6 +54,7 @@ export interface Subject {
   name: string;
   credits: number;
   goal: number;
+  color: string; // Color name key from COLOR_PALETTE
 }
 
 export interface Grade {
@@ -57,6 +66,8 @@ export interface Grade {
   weight: number;
 }
 
-export type User = FirebaseUser | { uid: string; isGuest: true; email: string | null; };
+export type User = FirebaseUser | { uid: string; isGuest: true; email: string | null; displayName?: string; };
 
-export type View = 'Overview' | 'Agenda' | 'Timetable' | 'Calendar' | 'Grades' | 'Profile';
+export type View = 'Overview' | 'Agenda' | 'Timetable' | 'Calendar' | 'Grades' | 'Profile' | 'Focus';
+
+export type PlannerEvent = Task | ClassEvent;

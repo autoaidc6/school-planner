@@ -1,14 +1,15 @@
-import { TaskCategory, ReminderOption, type Task, type ClassEvent, type Subject, type Grade } from './types';
+import { TaskCategory, ReminderOption, type Task, type ClassEvent, type Subject, type Grade, RecurrenceOption } from './types';
 
-export const SUBJECT_COLORS: { [key: string]: { bg: string; text: string; border: string; } } = {
-  'Mathematics': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-500' },
-  'Physics': { bg: 'bg-indigo-100', text: 'text-indigo-800', border: 'border-indigo-500' },
-  'Literature': { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-500' },
-  'History': { bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-500' },
-  'Computer Science': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-500' },
-  'Art': { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-500' },
-  'Personal': { bg: 'bg-teal-100', text: 'text-teal-800', border: 'border-teal-500' },
-  'Default': { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-500' },
+export const COLOR_PALETTE: { [key: string]: { bg: string; text: string; border: string; } } = {
+  'blue': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-500' },
+  'indigo': { bg: 'bg-indigo-100', text: 'text-indigo-800', border: 'border-indigo-500' },
+  'purple': { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-500' },
+  'pink': { bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-500' },
+  'green': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-500' },
+  'yellow': { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-500' },
+  'teal': { bg: 'bg-teal-100', text: 'text-teal-800', border: 'border-teal-500' },
+  'red': { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-500' },
+  'gray': { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-500' },
 };
 
 const today = new Date();
@@ -29,6 +30,7 @@ export const INITIAL_TASKS: Task[] = [
     reminder: ReminderOption.OneHour,
     startTime: '14:00',
     endTime: '15:30',
+    recurrence: RecurrenceOption.None,
   },
   {
     id: '2',
@@ -39,6 +41,7 @@ export const INITIAL_TASKS: Task[] = [
     completed: false,
     description: 'Review chapters on kinematics and dynamics.',
     reminder: ReminderOption.OneDay,
+    recurrence: RecurrenceOption.None,
   },
   {
     id: '3',
@@ -49,6 +52,7 @@ export const INITIAL_TASKS: Task[] = [
     completed: false,
     description: '5-page essay on the theme of the American Dream.',
     reminder: ReminderOption.OneDay,
+    recurrence: RecurrenceOption.None,
   },
   {
     id: '4',
@@ -59,6 +63,7 @@ export const INITIAL_TASKS: Task[] = [
     completed: true,
     description: 'Presentation on the Roman Empire.',
     reminder: ReminderOption.None,
+    recurrence: RecurrenceOption.None,
   }
 ];
 
@@ -102,9 +107,10 @@ export const INITIAL_CLASSES: ClassEvent[] = [
 ];
 
 export const INITIAL_SUBJECTS: Subject[] = [
-    { id: 's1', name: 'Mathematics', credits: 4, goal: 90 },
-    { id: 's2', name: 'Physics', credits: 4, goal: 85 },
-    { id: 's3', name: 'Literature', credits: 3, goal: 88 },
+    { id: 's1', name: 'Mathematics', credits: 4, goal: 90, color: 'blue' },
+    { id: 's2', name: 'Physics', credits: 4, goal: 85, color: 'indigo' },
+    { id: 's3', name: 'Literature', credits: 3, goal: 88, color: 'purple' },
+    { id: 's4', name: 'Computer Science', credits: 4, goal: 92, color: 'green' },
 ];
 
 export const INITIAL_GRADES: Grade[] = [
