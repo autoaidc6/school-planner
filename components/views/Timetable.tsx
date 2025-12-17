@@ -21,6 +21,11 @@ const getWeekDates = (startDate: Date) => {
   return dates;
 };
 
+const timeToPosition = (time: string) => {
+    const [hour, minute] = time.split(':').map(Number);
+    return (hour - 7) * 60 + minute; // Adjust for 7 AM start
+};
+
 interface TimetableProps {
   tasks: Task[];
   classes: ClassEvent[];
@@ -33,8 +38,10 @@ interface TimetableProps {
 const Timetable: React.FC<TimetableProps> = ({ tasks, classes, subjects, onEdit, onRescheduleClass, onRescheduleTask }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   
-  const weekStartDate = getWeekStartDate(currentDate);
-  const weekDates = getWeekDates(weekStartDate);
+  const weekDates = useMemo(() => {
+    const start = getWeekStartDate(currentDate);
+    return getWeekDates(start);
+  }, [currentDate]);
   
   const hours = Array.from({ length: 15 }, (_, i) => 7 + i); // 7 AM to 9 PM
   const gridRef = useRef<HTMLDivElement>(null);
@@ -50,11 +57,6 @@ const Timetable: React.FC<TimetableProps> = ({ tasks, classes, subjects, onEdit,
   const getSubjectColor = (subjectName: string) => {
     const colorName = subjectMap[subjectName]?.color || 'gray';
     return COLOR_PALETTE[colorName] || COLOR_PALETTE['gray'];
-  };
-
-  const timeToPosition = (time: string) => {
-    const [hour, minute] = time.split(':').map(Number);
-    return (hour - 7) * 60 + minute; // Adjust for 7 AM start
   };
 
   const changeWeek = (offset: number) => {
@@ -121,12 +123,104 @@ const Timetable: React.FC<TimetableProps> = ({ tasks, classes, subjects, onEdit,
 
   const isSameDay = (d1: Date, d2: Date) => d1.toDateString() === d2.toDateString();
 
-  const eventsForWeek = [
-      ...classes.map(c => ({...c, type: 'class'})),
+  // 1. Filter events for current week
+  const rawEventsForWeek = useMemo(() => [
+      ...classes.map(c => ({...c, type: 'class' as const})),
       ...tasks
         .filter(t => t.startTime && t.endTime && new Date(t.dueDate) >= weekDates[0] && new Date(t.dueDate) <= weekDates[6])
-        .map(t => ({...t, type: 'task'}))
-  ];
+        .map(t => ({...t, type: 'task' as const}))
+  ], [classes, tasks, weekDates]);
+
+  // 2. Group by day and resolve overlaps
+  const processedEvents = useMemo(() => {
+    // Group events by Day Index (0-6 matching weekDates array)
+    const dayGroups = Array.from({length: 7}, () => [] as PlannerEvent[]);
+    
+    rawEventsForWeek.forEach(ev => {
+       let dayIndex = -1;
+       if(ev.type === 'class') {
+          // Find which index in weekDates matches this class day
+          dayIndex = weekDates.findIndex(d => d.getDay() === (ev as ClassEvent).day);
+       } else {
+           dayIndex = weekDates.findIndex(d => isSameDay(d, new Date((ev as Task).dueDate)));
+       }
+       if(dayIndex >= 0 && ev.startTime && ev.endTime) {
+           dayGroups[dayIndex].push(ev);
+       }
+    });
+
+    const results: any[] = [];
+
+    // Process each day
+    dayGroups.forEach((dayEvents, dayIndex) => {
+        if (dayEvents.length === 0) return;
+
+        // Sort by start time, then duration (desc)
+        dayEvents.sort((a, b) => {
+            const startDiff = timeToPosition(a.startTime!) - timeToPosition(b.startTime!);
+            if (startDiff !== 0) return startDiff;
+            const durA = timeToPosition(a.endTime!) - timeToPosition(a.startTime!);
+            const durB = timeToPosition(b.endTime!) - timeToPosition(b.startTime!);
+            return durB - durA;
+        });
+
+        // Cluster logic: Group events that overlap
+        const clusters: PlannerEvent[][] = [];
+        let currentCluster: PlannerEvent[] = [];
+        let clusterEnd = -1;
+
+        dayEvents.forEach(ev => {
+            const start = timeToPosition(ev.startTime!);
+            const end = timeToPosition(ev.endTime!);
+            
+            if (currentCluster.length === 0) {
+                currentCluster.push(ev);
+                clusterEnd = end;
+            } else {
+                if (start < clusterEnd) {
+                    currentCluster.push(ev);
+                    clusterEnd = Math.max(clusterEnd, end);
+                } else {
+                    clusters.push(currentCluster);
+                    currentCluster = [ev];
+                    clusterEnd = end;
+                }
+            }
+        });
+        if (currentCluster.length > 0) clusters.push(currentCluster);
+
+        // Assign lanes within clusters to avoid overlap
+        clusters.forEach(cluster => {
+            const lanes: PlannerEvent[][] = [];
+            cluster.forEach(ev => {
+                 let placed = false;
+                 for(let i=0; i<lanes.length; i++) {
+                     const last = lanes[i][lanes[i].length - 1];
+                     // Only place in lane if it starts after the last one ends
+                     if (timeToPosition(ev.startTime!) >= timeToPosition(last.endTime!)) {
+                         lanes[i].push(ev);
+                         placed = true;
+                         break;
+                     }
+                 }
+                 if(!placed) lanes.push([ev]);
+            });
+
+            lanes.forEach((lane, laneIndex) => {
+                lane.forEach(ev => {
+                    results.push({
+                        ...ev,
+                        dayIndex,
+                        clusterLaneIndex: laneIndex,
+                        clusterTotalLanes: lanes.length
+                    });
+                });
+            });
+        });
+    });
+
+    return results;
+  }, [rawEventsForWeek, weekDates]);
 
   return (
     <div className="p-4 md:p-8 flex flex-col h-full">
@@ -134,7 +228,7 @@ const Timetable: React.FC<TimetableProps> = ({ tasks, classes, subjects, onEdit,
         <h1 className="text-3xl font-bold text-gray-900">Timetable</h1>
         <div className="flex items-center space-x-2">
             <button onClick={() => changeWeek(-1)} className="p-2 rounded-full hover:bg-gray-100"><ChevronLeftIcon className="w-5 h-5" /></button>
-            <h2 className="text-xl font-semibold text-gray-700 w-48 text-center">{weekStartDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
+            <h2 className="text-xl font-semibold text-gray-700 w-48 text-center">{weekDates[0].toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
             <button onClick={() => changeWeek(1)} className="p-2 rounded-full hover:bg-gray-100"><ChevronRightIcon className="w-5 h-5" /></button>
         </div>
       </div>
@@ -166,26 +260,22 @@ const Timetable: React.FC<TimetableProps> = ({ tasks, classes, subjects, onEdit,
                 <div key={`vline-${index}`} className="absolute top-0 bottom-0 border-l border-gray-100" style={{left: `${(index + 1) * (100/7)}%`}}></div>
                 ))}
                 
-                {eventsForWeek.map(event => {
-                    if (!event.startTime || !event.endTime) return null;
+                {processedEvents.map(event => {
                     const top = timeToPosition(event.startTime) * (80 / 60);
                     const duration = timeToPosition(event.endTime) - timeToPosition(event.startTime);
                     const height = duration * (80 / 60);
                     const color = getSubjectColor(event.subject);
-
-                    let dayIndex;
-                    if(event.type === 'class') {
-                        const classEvent = event as ClassEvent;
-                        dayIndex = weekDates.findIndex(d => d.getDay() === classEvent.day);
-                    } else {
-                        const taskEvent = event as Task;
-                        dayIndex = weekDates.findIndex(d => isSameDay(d, new Date(taskEvent.dueDate)));
-                    }
-
-                    if (dayIndex === -1) return null;
-
+                    const dayIndex = event.dayIndex;
+                    
+                    const laneIndex = event.clusterLaneIndex || 0;
+                    const totalLanes = event.clusterTotalLanes || 1;
+                    
                     const isDragged = draggedItem?.id === event.id && draggedItem?.type === event.type;
                     
+                    // Calculation for left and width to handle side-by-side display
+                    const widthPercent = (100 / 7) / totalLanes;
+                    const leftPercent = (dayIndex * (100 / 7)) + (laneIndex * widthPercent);
+
                     return (
                         <div
                             key={`${event.type}-${event.id}`}
@@ -193,15 +283,17 @@ const Timetable: React.FC<TimetableProps> = ({ tasks, classes, subjects, onEdit,
                             onDragStart={(e) => handleDragStart(e, event, event.type as 'task' | 'class')}
                             onDragEnd={handleDragEnd}
                             onClick={() => onEdit(event as PlannerEvent)}
-                            className={`absolute w-[calc(100%/7-4px)] mx-[2px] p-2 rounded-lg flex flex-col cursor-grab hover:ring-2 ring-blue-400 transition-all ${color.bg} ${color.text} ${isDragged ? 'opacity-50 scale-105 shadow-lg' : 'shadow-sm'} ${event.type === 'task' ? 'border-2 border-dashed ' + color.border : ''}`}
+                            className={`absolute mx-[1px] p-2 rounded-lg flex flex-col cursor-grab hover:ring-2 ring-blue-400 transition-all ${color.bg} ${color.text} ${isDragged ? 'opacity-50 scale-105 shadow-lg' : 'shadow-sm'} ${event.type === 'task' ? 'border-2 border-dashed ' + color.border : ''}`}
                             style={{
                                 top: `${top}px`,
                                 height: `${height}px`,
-                                left: `${dayIndex * (100 / 7)}%`,
+                                left: `${leftPercent}%`,
+                                width: `calc(${widthPercent}% - 2px)`,
+                                zIndex: totalLanes > 1 ? 10 : 1
                             }}
                         >
-                            <p className="font-bold text-sm">{'title' in event ? event.title : event.subject}</p>
-                            <p className="text-xs mt-auto">{event.startTime} - {event.endTime}</p>
+                            <p className="font-bold text-sm truncate">{'title' in event ? event.title : event.subject}</p>
+                            <p className="text-xs mt-auto truncate">{event.startTime} - {event.endTime}</p>
                         </div>
                     );
                 })}
